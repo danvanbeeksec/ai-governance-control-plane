@@ -1,6 +1,9 @@
 # AI Governance Control Plane
 
-An independent, synthetic prototype for recording proposed AI use cases, applying transparent classification and risk rules, and producing an executive-readable decision summary. It validates and consumes an explicitly pinned artifact from a separately maintained AI control framework.
+The included Streamlit application, **AI System Risk & Control Assessor**, is an independent,
+synthetic prototype for recording proposed AI use cases, applying transparent classification and
+risk rules, and producing an executive-readable decision summary. It validates and consumes an
+explicitly pinned artifact from a separately maintained AI control framework.
 
 This is a governance product demonstration. It shows how governance intent can become a usable and auditable decision process. It is not a production GRC platform or a substitute for qualified legal, compliance, privacy, security, or risk review.
 

@@ -5,6 +5,16 @@ def test_switching_example_loads_its_values_and_applies_risk_rule(root, monkeypa
     monkeypatch.delenv("AI_CONTROL_FRAMEWORK_PATH", raising=False)
     app = AppTest.from_file(str(root / "app.py")).run(timeout=10)
 
+    assert [item.value for item in app.title] == ["AI System Risk & Control Assessor"]
+    captions = [item.value for item in app.caption]
+    assert (
+        "Assess inherent AI system risk, understand the decision rationale, and identify controls "
+        "requiring implementation or further review."
+        in captions
+    )
+    assert "A demonstration application from the AI Governance Control Plane." in captions
+    assert "A transparent, deterministic demonstration using synthetic information only." not in captions
+
     example_selector = next(
         item for item in app.selectbox if item.label == "Start with a synthetic example"
     )
