@@ -22,6 +22,7 @@ from ai_governance_control_plane.framework_loader import (  # noqa: E402
     load_framework_bytes,
 )
 from ai_governance_control_plane.models import Assessment  # noqa: E402
+from ai_governance_control_plane.summarize import tier_display  # noqa: E402
 from ai_governance_control_plane.workflow import run_assessment_workflow  # noqa: E402
 
 try:  # The pinned dependency is installed in deployed and clean-install environments.
@@ -342,10 +343,21 @@ if submitted and framework:
     else:
         st.header("3. Review the decision")
         tier, baseline, rules, controls = st.columns(4)
-        tier.metric("Inherent risk", label(result.decision.final_tier))
-        baseline.metric("Baseline", label(result.decision.baseline_tier))
+        tier.metric("Inherent risk", tier_display(result.decision.final_tier))
+        baseline.metric("Baseline", tier_display(result.decision.baseline_tier))
         rules.metric("Risk elevation rules", len(result.decision.applied_rules))
-        controls.metric("Framework controls", result.recommendations.summary.total_controls)
+        controls.metric(
+            "Required controls",
+            result.recommendations.summary.applicable_system_controls,
+        )
+        with st.expander("Understanding risk tiers"):
+            st.markdown("**Tier 1: High.** Enhanced multidisciplinary review and approval.")
+            st.markdown("**Tier 2: Moderate.** Targeted specialist review and proportionate approval.")
+            st.markdown("**Tier 3: Lower.** Standard governance review and proportionate testing.")
+            st.caption(
+                "The tier describes inherent risk before controls. It is not an approval, "
+                "compliance determination, or residual-risk rating."
+            )
         st.subheader("Executive summary")
         st.write(result.decision.executive_summary)
         with st.expander("Why this tier was assigned"):

@@ -11,6 +11,7 @@ from ai_governance_control_plane.risk_engine import (
     evaluate_assessment_record,
     load_model,
 )
+from ai_governance_control_plane.summarize import tier_display, tier_qualitative_label
 
 ROOT = Path(__file__).resolve().parents[1]
 MODEL = load_model(ROOT / "data" / "risk-model.yaml")
@@ -34,6 +35,19 @@ def base_assessment(**overrides):
     }
     assessment.update(overrides)
     return assessment
+
+
+@pytest.mark.parametrize(
+    ("tier", "qualitative", "display"),
+    [
+        ("tier_1", "High", "Tier 1: High"),
+        ("tier_2", "Moderate", "Tier 2: Moderate"),
+        ("tier_3", "Lower", "Tier 3: Lower"),
+    ],
+)
+def test_every_tier_has_a_consistent_qualitative_label(tier, qualitative, display):
+    assert tier_qualitative_label(tier) == qualitative
+    assert tier_display(tier) == display
 
 
 @pytest.mark.parametrize(
@@ -135,7 +149,9 @@ def test_explanation_is_traceable_and_versioned():
     assert result["human_review_required"] is True
     assert result["assessment_schema_version"] == "0.1.0"
     assert result["submitted_facts"]["assessment_id"] == "TEST-001"
-    assert "Tier 1 inherent AI system risk" in result["executive_summary"]
+    assert "Tier 1 (High) inherent AI system risk" in result["executive_summary"]
+    assert result["baseline_tier_label"] == "Lower"
+    assert result["final_tier_label"] == "High"
     assert result["framework_source"]["status"] == "not_loaded"
 
 

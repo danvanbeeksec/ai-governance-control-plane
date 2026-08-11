@@ -19,9 +19,11 @@ def test_switching_example_loads_its_values_and_applies_risk_rule(root, monkeypa
 
     assert not app.exception
     metrics = {item.label: item.value for item in app.metric}
-    assert metrics["Inherent risk"] == "Tier 1"
-    assert metrics["Baseline"] == "Tier 2"
+    assert metrics["Inherent risk"] == "Tier 1: High"
+    assert metrics["Baseline"] == "Tier 2: Moderate"
     assert metrics["Risk elevation rules"] == "1"
+    assert metrics["Required controls"] == "21"
+    assert "Framework controls" not in metrics
     rendered_text = " ".join(item.value for item in app.markdown)
     assert "Risk elevation rule ER-001 applied" in rendered_text
     assert "autonomy_level" not in rendered_text
@@ -43,6 +45,7 @@ def test_switching_example_loads_its_values_and_applies_risk_rule(root, monkeypa
     assert "the owner remains accountable for confirming completion" in rendered_text
     assert any(item.label == "Autonomy" for item in app.sidebar.expander)
     assert any(item.label == "Action authority" for item in app.sidebar.expander)
+    assert any(item.label == "Understanding risk tiers" for item in app.expander)
     assert not app.get("file_uploader")
     assert any("use fictional or synthetic information only" in item.value for item in app.warning)
     assert "About this demonstration" in [item.label for item in app.sidebar.expander]

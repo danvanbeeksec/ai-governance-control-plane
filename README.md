@@ -103,9 +103,9 @@ before an assessment can run. The framework dependency is an operator configurat
 end-user upload.
 
 The interface uses fictional examples and does not persist submitted information. It displays
-the inherent-risk rationale, framework provenance, required system controls, controls requiring
-an applicability decision, enterprise dependencies, human-confirmation questions, and a
-downloadable JSON record.
+the inherent-risk tier with a qualitative label, framework provenance, required system controls,
+controls requiring an applicability decision, enterprise dependencies, human-confirmation
+questions, and a downloadable JSON record.
 
 See the [deployment guide](docs/deployment-guide.md) for public-readiness checks, hosted
 verification, publication boundaries, updates, and rollback.
