@@ -1,4 +1,4 @@
-"""Streamlit demonstration interface for the AI Governance Control Plane."""
+"""AI System Risk & Control Assessor demonstration interface."""
 
 from __future__ import annotations
 
@@ -238,9 +238,13 @@ def render_control_group(title: str, guidance: str, controls, empty_message: str
                     st.write(f"• {question}")
 
 
-st.set_page_config(page_title="AI Governance Control Plane", page_icon="🧭", layout="wide")
-st.title("AI Governance Control Plane")
-st.caption("A transparent, deterministic demonstration using synthetic information only.")
+st.set_page_config(page_title="AI System Risk & Control Assessor", page_icon="🧭", layout="wide")
+st.title("AI System Risk & Control Assessor")
+st.caption(
+    "Assess inherent AI system risk, understand the decision rationale, and identify controls "
+    "requiring implementation or further review."
+)
+st.caption("A demonstration application from the AI Governance Control Plane.")
 
 with st.sidebar:
     st.header("Demonstration setup")
