@@ -1,4 +1,4 @@
 PyYAML>=6,<7
-pydantic>=2.8,<3
+pydantic>=2.13.4,<3
 streamlit>=1.38,<2
 ai-governance-control-framework @ git+https://github.com/danvanbeeksec/ai-governance-control-framework.git@1ce00c84845ba3fa808d16fc2537fa7414b6a8a2
