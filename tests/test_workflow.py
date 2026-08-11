@@ -19,8 +19,12 @@ def test_end_to_end_workflow_uses_external_framework(root, framework_path):
     )
 
     assert result.decision.final_tier == "tier_1"
+    assert result.decision.final_tier_label == "High"
     assert result.decision.framework_source == framework.source
     assert result.recommendations.summary.total_controls == len(framework.controls)
+    assert result.recommendations.summary.applicable_system_controls == len(
+        result.recommendations.applicable_system_controls
+    )
     assert (
         result.recommendations.summary.enterprise_dependencies
         + result.recommendations.summary.applicable_system_controls

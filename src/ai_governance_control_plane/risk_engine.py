@@ -10,7 +10,7 @@ import yaml
 from pydantic import ValidationError
 
 from .models import Assessment, DecisionRecord, FrameworkSource
-from .summarize import build_executive_summary
+from .summarize import build_executive_summary, tier_qualitative_label
 
 
 class AssessmentError(ValueError):
@@ -129,7 +129,9 @@ def evaluate_assessment_record(
                 "information_sensitivity": facts.get("information_sensitivity"),
             },
             "baseline_tier": None,
+            "baseline_tier_label": None,
             "final_tier": None,
+            "final_tier_label": None,
             "applied_rules": [],
             "explanation": [f"No tier assigned because required inputs are missing: {', '.join(missing)}."],
             "human_review_required": True,
@@ -204,7 +206,9 @@ def evaluate_assessment_record(
             "information_sensitivity": sensitivity,
         },
         "baseline_tier": baseline,
+        "baseline_tier_label": tier_qualitative_label(baseline),
         "final_tier": final_tier,
+        "final_tier_label": tier_qualitative_label(final_tier),
         "applied_rules": applied_rules,
         "explanation": explanation,
         "human_review_required": True,

@@ -64,7 +64,7 @@ The risk engine remains independent from external control data. The framework is
 
 The canonical executable intake includes schema version, ID, system name, purpose, accountable owner, autonomy, information sensitivity, human review, action authority, system access, agent capabilities, external reach, reversibility, and decision impact. The richer JSON use-case examples are product-discovery material, not an executable schema.
 
-Decision output includes validation status, assessment and model versions, submitted facts, baseline tier, rule trace, final tier, missing facts, unresolved questions, an executive summary, a human-decision warning, and reserved framework-provenance fields. Numeric scoring is intentionally excluded because the methodology rejects unsupported precision.
+Decision output includes validation status, assessment and model versions, submitted facts, baseline tier, qualitative tier labels, rule trace, final tier, missing facts, unresolved questions, an executive summary, a human-decision warning, and reserved framework-provenance fields. Numeric scoring is intentionally excluded because the methodology rejects unsupported precision.
 
 ## Design decisions
 

@@ -5,6 +5,30 @@ from __future__ import annotations
 from typing import Any
 
 
+TIER_QUALITATIVE_LABELS = {
+    "tier_1": "High",
+    "tier_2": "Moderate",
+    "tier_3": "Lower",
+}
+
+
+def tier_qualitative_label(tier: str | None) -> str | None:
+    """Return the executive-readable risk label for a canonical tier."""
+    return TIER_QUALITATIVE_LABELS.get(tier) if tier else None
+
+
+def tier_display(tier: str) -> str:
+    """Combine the canonical tier number with its qualitative meaning."""
+    numeric = tier.replace("_", " ").title()
+    return f"{numeric}: {TIER_QUALITATIVE_LABELS[tier]}"
+
+
+def tier_summary_display(tier: str) -> str:
+    """Format a tier naturally when it appears inside a sentence."""
+    numeric = tier.replace("_", " ").title()
+    return f"{numeric} ({TIER_QUALITATIVE_LABELS[tier]})"
+
+
 def build_executive_summary(facts: dict[str, Any], result: dict[str, Any]) -> str:
     system_name = facts.get("system_name") or "The proposed AI system"
     purpose = facts.get("business_purpose") or "No business purpose was supplied."
@@ -17,8 +41,8 @@ def build_executive_summary(facts: dict[str, Any], result: dict[str, Any]) -> st
         )
 
     rule_ids = [rule["rule_id"] for rule in result["applied_rules"]]
-    final_tier = result["final_tier"].replace("_", " ").title()
-    baseline_tier = result["baseline_tier"].replace("_", " ").title()
+    final_tier = tier_summary_display(result["final_tier"])
+    baseline_tier = tier_summary_display(result["baseline_tier"])
     rule_text = (
         f" Elevation rules {', '.join(rule_ids)} applied."
         if rule_ids

@@ -88,7 +88,9 @@ class DecisionRecord(BaseModel):
     submitted_facts: dict
     baseline_inputs: dict[str, str | None]
     baseline_tier: Tier | None
+    baseline_tier_label: str | None = None
     final_tier: Tier | None
+    final_tier_label: str | None = None
     applied_rules: list[AppliedRule]
     explanation: list[str]
     executive_summary: str
