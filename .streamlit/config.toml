@@ -1,0 +1,18 @@
+[client]
+showErrorDetails = "none"
+toolbarMode = "viewer"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+headless = true
+enableXsrfProtection = true
+
+[theme]
+base = "light"
+primaryColor = "#174A7E"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F3F6F9"
+textColor = "#172B3A"
+showSidebarBorder = true

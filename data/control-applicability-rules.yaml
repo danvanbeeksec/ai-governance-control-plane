@@ -1,0 +1,281 @@
+schema_version: "1.0"
+methodology:
+  id: ai-control-applicability
+  version: "0.1.0"
+  status: approved
+  framework_library_version: "0.1.0"
+  principle: Assessment facts may establish applicability, but absence of a trigger does not establish non-applicability.
+outcomes:
+  applicable: The control applies based on a universal treatment or a matched factual trigger.
+  inherited_dependency: An enterprise capability is expected, but provider, scope, configuration, and evidence require confirmation.
+  undetermined: Current assessment facts are insufficient for an applicability decision.
+controls:
+  - control_id: AI-GOV-001
+    section: enterprise_dependencies
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Every adopting organization requires an accountable governance mandate and decision rights.
+  - control_id: AI-GOV-002
+    section: enterprise_dependencies
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Every governed AI use depends on organization-wide policy and acceptable-use boundaries.
+  - control_id: AI-GOV-003
+    section: system_controls
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Every proposed or operating AI system requires inventory coverage and accountable ownership.
+  - control_id: AI-GOV-004
+    section: system_controls
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Every AI system requires a context-appropriate risk and impact assessment.
+  - control_id: AI-GOV-005
+    section: enterprise_dependencies
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Every governed use depends on role-appropriate competence and awareness.
+  - control_id: AI-GOV-006
+    section: enterprise_dependencies
+    treatment: universal
+    enterprise_dependency: true
+    rationale: The governance system requires independent challenge and continual improvement.
+  - control_id: AI-SEC-001
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: External reach or elevated system access establishes a clear architecture and threat-modeling need.
+    triggers:
+      - all: [{field: external_reach, operator: in, values: [bounded, broad]}]
+      - all: [{field: system_access, operator: in, values: [standard, privileged]}]
+    unresolved_questions: ["Is the system developed, integrated, configured, or otherwise exposed to trust-boundary threats?"]
+
+  - control_id: AI-SEC-002
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Non-public information, system access, or tool capability establishes an identity and least-privilege need.
+    triggers:
+      - all: [{field: information_sensitivity, operator: in, values: [internal, confidential, restricted]}]
+      - all: [{field: system_access, operator: in, values: [standard, privileged]}]
+      - all: [{field: agent_capabilities, operator: contains_any, values: [external_tools]}]
+    unresolved_questions: ["Does the system authenticate users or non-human actors or access protected services?"]
+
+  - control_id: AI-SEC-003
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Tool use or external communication creates plausible untrusted-content pathways.
+    triggers:
+      - all: [{field: agent_capabilities, operator: contains_any, values: [external_tools, external_communication]}]
+    unresolved_questions: ["Does the system receive prompts, files, retrieved content, messages, web content, or other untrusted input?"]
+
+  - control_id: AI-SEC-004
+    section: system_controls
+    treatment: universal
+    enterprise_dependency: false
+    rationale: Every system output must be handled according to its receiving context and potential use.
+  - control_id: AI-SEC-005
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: false
+    rationale: The current intake does not identify whether code, configurations, integrations, or customizations are developed or maintained.
+    unresolved_questions: ["Is the system internally developed, materially integrated, configured, or customized?"]
+
+  - control_id: AI-SEC-006
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Autonomy, tools, external reach, or consequential action creates resource and service-abuse exposure.
+    triggers:
+      - all: [{field: autonomy_level, operator: in, values: [autonomous, conditionally_autonomous]}]
+      - all: [{field: agent_capabilities, operator: contains_any, values: [external_tools, delegation, persistent_memory]}]
+      - all: [{field: external_reach, operator: in, values: [bounded, broad]}]
+      - all: [{field: action_authority, operator: in, values: [modify_production, execute_material_transaction, safety_relevant_action]}]
+    unresolved_questions: ["Is the system production, usage-priced, recursive, or computationally intensive?"]
+
+  - control_id: AI-DAT-001
+    section: system_controls
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Every AI system processes or generates data and requires authorized use and minimization.
+  - control_id: AI-DAT-002
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Non-public information requires protection proportionate to its sensitivity.
+    triggers:
+      - all: [{field: information_sensitivity, operator: in, values: [internal, confidential, restricted]}]
+    unresolved_questions: ["Does the system process personal, regulated, contractual, or otherwise specially protected information?"]
+
+  - control_id: AI-DAT-003
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: false
+    rationale: The current intake does not describe training, retrieval, grounding, evaluation, or decision-support data sources.
+    unresolved_questions: ["What material data and knowledge sources does the system use, and for what purpose?"]
+
+  - control_id: AI-DAT-004
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: true
+    rationale: Consequential decision impact establishes a plausible need for individual protections and privacy review.
+    triggers:
+      - all: [{field: decision_impact, operator: in, values: [consequential, regulated_or_consequential]}]
+    unresolved_questions: ["Does the system use personal data or identify, profile, infer about, or materially affect individuals?"]
+
+  - control_id: AI-LCM-001
+    section: system_controls
+    treatment: universal
+    enterprise_dependency: false
+    rationale: Every AI system requires documented purpose, boundaries, limitations, and success criteria.
+  - control_id: AI-LCM-002
+    section: system_controls
+    treatment: universal
+    enterprise_dependency: false
+    rationale: Every AI system requires proportionate evaluation and release-readiness criteria before use.
+  - control_id: AI-LCM-003
+    section: system_controls
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Every AI system requires defined material-change and reassessment triggers.
+  - control_id: AI-LCM-004
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Non-public data, external reach, or operational impact establishes a clear suspension and retirement need.
+    triggers:
+      - all: [{field: information_sensitivity, operator: in, values: [internal, confidential, restricted]}]
+      - all: [{field: external_reach, operator: in, values: [bounded, broad]}]
+      - all: [{field: decision_impact, operator: in, values: [operational, consequential, regulated_or_consequential]}]
+    unresolved_questions: ["Will the system be production, externally used, vendor-dependent, or retain data?"]
+
+  - control_id: AI-AGT-001
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Autonomous operation, tools, communication, delegation, memory, or action authority establishes agent identity and authority needs.
+    triggers:
+      - all: [{field: autonomy_level, operator: in, values: [autonomous, conditionally_autonomous]}]
+      - all: [{field: agent_capabilities, operator: contains_any, values: [external_tools, external_communication, delegation, persistent_memory]}]
+      - all: [{field: action_authority, operator: in, values: [modify_nonproduction, modify_production, execute_material_transaction, safety_relevant_action]}]
+    unresolved_questions: ["Can the system plan, invoke services, or act beyond content generation?"]
+
+  - control_id: AI-AGT-002
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Tool capability, system access, or modification authority requires explicit connector and action boundaries.
+    triggers:
+      - all: [{field: agent_capabilities, operator: contains_any, values: [external_tools]}]
+      - all: [{field: system_access, operator: in, values: [standard, privileged]}]
+      - all: [{field: action_authority, operator: in, values: [modify_nonproduction, modify_production, execute_material_transaction, safety_relevant_action]}]
+    unresolved_questions: ["Does the system have plugins, code execution, messaging, workflow, or other connector access?"]
+
+  - control_id: AI-AGT-003
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Material actions or external communication require approval boundaries and irreversible-action safeguards.
+    triggers:
+      - all: [{field: action_authority, operator: in, values: [modify_nonproduction, modify_production, execute_material_transaction, safety_relevant_action]}]
+      - all: [{field: agent_capabilities, operator: contains_any, values: [external_communication]}]
+      - all: [{field: reversibility, operator: in, values: [difficult]}]
+    unresolved_questions: ["Can the system make commitments, affect rights, send messages, execute code, or move value?"]
+
+  - control_id: AI-AGT-004
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Persistent memory directly establishes a need to protect agent state.
+    triggers:
+      - all: [{field: agent_capabilities, operator: contains_any, values: [persistent_memory]}]
+    unresolved_questions: ["Does the system retain any conversational, task, user, vector, episodic, or cross-session state?"]
+
+  - control_id: AI-AGT-005
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Delegation capability establishes multi-agent trust and control requirements.
+    triggers:
+      - all: [{field: agent_capabilities, operator: contains_any, values: [delegation]}]
+    unresolved_questions: ["Can the system communicate, coordinate, negotiate, or invoke another AI system?"]
+
+  - control_id: AI-AGT-006
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Autonomy, privilege, broad reach, material action, or difficult reversibility requires containment and emergency-stop design.
+    triggers:
+      - all: [{field: autonomy_level, operator: in, values: [autonomous, conditionally_autonomous]}]
+      - all: [{field: system_access, operator: in, values: [privileged]}]
+      - all: [{field: external_reach, operator: in, values: [broad]}]
+      - all: [{field: action_authority, operator: in, values: [modify_production, execute_material_transaction, safety_relevant_action]}]
+      - all: [{field: reversibility, operator: in, values: [difficult]}]
+    unresolved_questions: ["Could delayed containment materially increase harm?"]
+
+  - control_id: AI-OPS-001
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: false
+    rationale: The current intake does not establish lifecycle stage or operational deployment.
+    unresolved_questions: ["Will the system operate in production, and what events and decisions require traceability?"]
+
+  - control_id: AI-OPS-002
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: false
+    rationale: The current intake does not establish production monitoring scope, frequency, or detection needs.
+    unresolved_questions: ["Will the system operate in production, and could delayed detection materially increase harm?"]
+
+  - control_id: AI-OPS-003
+    section: system_controls
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Every operational AI system depends on enterprise incident response and reporting capability.
+  - control_id: AI-OPS-004
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Operational impact, external reach, material action, or difficult reversibility establishes resilience and recovery needs.
+    triggers:
+      - all: [{field: decision_impact, operator: in, values: [operational, consequential, regulated_or_consequential]}]
+      - all: [{field: external_reach, operator: in, values: [bounded, broad]}]
+      - all: [{field: action_authority, operator: in, values: [modify_production, execute_material_transaction, safety_relevant_action]}]
+      - all: [{field: reversibility, operator: in, values: [recoverable_with_effort, difficult]}]
+    unresolved_questions: ["Does the system support material operations or have availability or integrity requirements?"]
+
+  - control_id: AI-VSC-001
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: true
+    rationale: The current intake does not establish whether an external AI supplier or service is used.
+    unresolved_questions: ["Which external models, applications, platforms, data services, plugins, or support providers are involved?"]
+
+  - control_id: AI-VSC-002
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: true
+    rationale: Supplier involvement and contractual exposure are not represented in the canonical assessment.
+    unresolved_questions: ["Does a third party process organizational data or support material operations?"]
+
+  - control_id: AI-VSC-003
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: false
+    rationale: Component sourcing, provenance, and loading behavior are not represented in the canonical assessment.
+    unresolved_questions: ["Does the system use external, open-source, pretrained, downloaded, imported, or dynamically loaded components?"]
+
+  - control_id: AI-VSC-004
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: true
+    rationale: Material supplier and subprocessor relationships are not represented in the canonical assessment.
+    unresolved_questions: ["Which providers and subprocessors can materially change the system or service?"]
+
+  - control_id: AI-VSC-005
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: true
+    rationale: Provider concentration, continuity, and exit dependencies require information not present in the current intake.
+    unresolved_questions: ["Could loss or material change of a provider, model, platform, or data source disrupt important operations or controls?"]

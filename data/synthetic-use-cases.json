@@ -1,0 +1,91 @@
+{
+  "dataset": "ai-governance-control-plane synthetic examples",
+  "schema_version": "0.1.0-draft",
+  "synthetic_data_notice": "All organizations, people, systems, providers, scenarios, and facts are fictional.",
+  "use_cases": [
+    {
+      "use_case_id": "SYN-001",
+      "title": "Internal policy search assistant",
+      "organization": "Northstar Community Services",
+      "business_purpose": "Help employees find approved guidance through conversational search.",
+      "expected_benefit": "Reduce time locating routine guidance while preserving source links.",
+      "intended_users": ["employees"],
+      "affected_population": "Employees who voluntarily use the assistant.",
+      "capability": {"type": "generative_ai", "generates_content": true, "takes_actions": false},
+      "exposure": "internal",
+      "decision_role": "content_support",
+      "human_control": "review_before_use",
+      "information_sensitivity": "internal",
+      "ai_capability_and_autonomy": "human_supervised",
+      "data_categories": ["ordinary_internal_business_data"],
+      "external_provider": false,
+      "impact_level": "limited",
+      "reach": "bounded_team",
+      "reversibility": "routine_recovery",
+      "lifecycle_stage": "proposal",
+      "known_uncertainties": ["Source updates are not designed.", "Unsupported-answer criteria are unresolved."],
+      "expected_routing": {
+        "baseline_inherent_risk_tier": 3,
+        "contextual_elevations": [],
+        "final_risk_tier": 3
+      }
+    },
+    {
+      "use_case_id": "SYN-002",
+      "title": "Customer support response recommender",
+      "organization": "Harborlight Utilities Cooperative",
+      "business_purpose": "Suggest responses for trained customer-service agents.",
+      "expected_benefit": "Improve consistency without direct customer contact by the system.",
+      "intended_users": ["customer_service_agents"],
+      "affected_population": "Fictional customers whose cases are reviewed by agents.",
+      "capability": {"type": "generative_ai", "generates_content": true, "takes_actions": false},
+      "exposure": "mixed",
+      "decision_role": "recommendation",
+      "human_control": "review_before_use",
+      "information_sensitivity": "confidential",
+      "ai_capability_and_autonomy": "human_supervised",
+      "data_categories": ["personal_data", "ordinary_internal_business_data"],
+      "external_provider": true,
+      "impact_level": "material",
+      "reach": "customer_segment",
+      "reversibility": "costly_recovery",
+      "lifecycle_stage": "proposal",
+      "known_uncertainties": ["Provider data treatment requires review.", "Incorrect-suggestion detection is unresolved."],
+      "expected_routing": {
+        "baseline_inherent_risk_tier": 3,
+        "contextual_elevations": [],
+        "final_risk_tier": 3
+      }
+    },
+    {
+      "use_case_id": "SYN-003",
+      "title": "Autonomous warehouse dispatch optimizer",
+      "organization": "Juniper Ridge Distribution",
+      "business_purpose": "Change dispatch priorities using demand and equipment forecasts.",
+      "expected_benefit": "Reduce delivery delays during changing conditions.",
+      "intended_users": ["operations_managers"],
+      "affected_population": "Fictional staff, drivers, and customers affected by dispatch decisions.",
+      "capability": {"type": "predictive_optimization", "generates_content": false, "takes_actions": true},
+      "exposure": "internal",
+      "decision_role": "automated_action",
+      "human_control": "delayed_intervention",
+      "information_sensitivity": "internal",
+      "ai_capability_and_autonomy": "autonomous",
+      "data_categories": ["ordinary_internal_business_data"],
+      "external_provider": false,
+      "impact_level": "consequential",
+      "reach": "broad_operational",
+      "reversibility": "difficult_to_reverse",
+      "lifecycle_stage": "proposal",
+      "known_uncertainties": ["Emergency stop behavior is unspecified.", "Maximum action window is unresolved."],
+      "expected_routing": {
+        "baseline_inherent_risk_tier": 2,
+        "contextual_elevations": [
+          "material_operational_action_without_prior_human_approval",
+          "consequential_impact_and_difficult_reversibility"
+        ],
+        "final_risk_tier": 1
+      }
+    }
+  ]
+}

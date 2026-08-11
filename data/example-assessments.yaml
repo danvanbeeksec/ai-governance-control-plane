@@ -1,0 +1,226 @@
+schema_version: 0.1.0
+synthetic_data_notice: >-
+  Every example is fictional and independently authored. Names, organizations, facts,
+  systems, and outcomes do not describe or reproduce an employer use case.
+
+assessments:
+  - assessment_id: SYN-001
+    system_name: Public Research Summarizer
+    business_purpose: Summarize public AI research for an analyst who approves all use.
+    accountable_owner: Fictional Research Operations Lead
+    autonomy_level: human_supervised
+    information_sensitivity: public
+    human_review: prior_to_each_meaningful_action
+    action_authority: generate_only
+    system_access: none
+    external_reach: none
+    reversibility: easy
+    decision_impact: none
+    agent_capabilities: []
+    expected:
+      status: evaluated
+      baseline_tier: tier_3
+      final_tier: tier_3
+      applied_rule_ids: []
+      rationale: Lowest matrix combination with no elevation factor.
+
+  - assessment_id: SYN-002
+    system_name: Internal Meeting Notes Assistant
+    business_purpose: Draft action items from routine internal meetings for attendee review.
+    accountable_owner: Fictional Collaboration Services Manager
+    autonomy_level: human_supervised
+    information_sensitivity: internal
+    human_review: prior_to_each_meaningful_action
+    action_authority: generate_only
+    system_access: standard
+    external_reach: none
+    reversibility: easy
+    decision_impact: operational
+    agent_capabilities: []
+    expected:
+      status: evaluated
+      baseline_tier: tier_3
+      final_tier: tier_3
+      applied_rule_ids: []
+      rationale: Supervised use of Internal information remains Tier 3.
+
+  - assessment_id: SYN-003
+    system_name: Customer Response Drafting Assistant
+    business_purpose: Draft service responses using fictional customer records for agent approval.
+    accountable_owner: Fictional Customer Operations Director
+    autonomy_level: human_supervised
+    information_sensitivity: confidential
+    human_review: prior_to_each_meaningful_action
+    action_authority: recommend
+    system_access: standard
+    external_reach: bounded
+    reversibility: recoverable_with_effort
+    decision_impact: operational
+    agent_capabilities: []
+    expected:
+      status: evaluated
+      baseline_tier: tier_3
+      final_tier: tier_3
+      applied_rule_ids: []
+      rationale: Confidential data alone does not elevate a fully supervised use in v0.1.
+
+  - assessment_id: SYN-004
+    system_name: Restricted Incident Evidence Assistant
+    business_purpose: Summarize synthetic security evidence for analyst approval.
+    accountable_owner: Fictional Security Response Lead
+    autonomy_level: human_supervised
+    information_sensitivity: restricted
+    human_review: prior_to_each_meaningful_action
+    action_authority: generate_only
+    system_access: standard
+    external_reach: none
+    reversibility: recoverable_with_effort
+    decision_impact: operational
+    agent_capabilities: []
+    expected:
+      status: evaluated
+      baseline_tier: tier_1
+      final_tier: tier_1
+      applied_rule_ids: [ER-006]
+      rationale: Restricted information is always Tier 1, even with prior review.
+
+  - assessment_id: SYN-005
+    system_name: Website Content Routing Assistant
+    business_purpose: Route approved public content through a bounded publishing workflow.
+    accountable_owner: Fictional Digital Content Manager
+    autonomy_level: conditionally_autonomous
+    information_sensitivity: public
+    human_review: checkpoints_or_exceptions
+    action_authority: modify_nonproduction
+    system_access: standard
+    external_reach: bounded
+    reversibility: easy
+    decision_impact: operational
+    agent_capabilities: [external_tools]
+    expected:
+      status: evaluated
+      baseline_tier: tier_3
+      final_tier: tier_3
+      applied_rule_ids: []
+      rationale: Bounded nonproduction action does not trigger an elevation.
+
+  - assessment_id: SYN-006
+    system_name: Procurement Workflow Agent
+    business_purpose: Create fictional purchase orders within approved thresholds.
+    accountable_owner: Fictional Procurement Director
+    autonomy_level: conditionally_autonomous
+    information_sensitivity: confidential
+    human_review: checkpoints_or_exceptions
+    action_authority: execute_material_transaction
+    system_access: standard
+    external_reach: bounded
+    reversibility: recoverable_with_effort
+    decision_impact: consequential
+    agent_capabilities: [external_tools, persistent_memory]
+    expected:
+      status: evaluated
+      baseline_tier: tier_2
+      final_tier: tier_1
+      applied_rule_ids: [ER-001]
+      rationale: Material transactions without prior approval elevate Tier 2 to Tier 1.
+
+  - assessment_id: SYN-007
+    system_name: Public Status Communication Agent
+    business_purpose: Publish generated service-status updates to a fictional public audience.
+    accountable_owner: Fictional Service Communications Lead
+    autonomy_level: autonomous
+    information_sensitivity: public
+    human_review: no_prior_review
+    action_authority: recommend
+    system_access: standard
+    external_reach: broad
+    reversibility: recoverable_with_effort
+    decision_impact: operational
+    agent_capabilities: [external_communication, persistent_memory]
+    expected:
+      status: evaluated
+      baseline_tier: tier_2
+      final_tier: tier_1
+      applied_rule_ids: [ER-005]
+      rationale: Broad autonomous external communication elevates the baseline.
+
+  - assessment_id: SYN-008
+    system_name: Privileged Configuration Analysis Agent
+    business_purpose: Analyze synthetic platform configuration and call an approved diagnostic tool.
+    accountable_owner: Fictional Platform Engineering Lead
+    autonomy_level: conditionally_autonomous
+    information_sensitivity: internal
+    human_review: checkpoints_or_exceptions
+    action_authority: recommend
+    system_access: privileged
+    external_reach: none
+    reversibility: easy
+    decision_impact: operational
+    agent_capabilities: [external_tools]
+    expected:
+      status: evaluated
+      baseline_tier: tier_3
+      final_tier: tier_2
+      applied_rule_ids: [ER-002]
+      rationale: Privileged access plus a tool capability establishes a Tier 2 minimum.
+
+  - assessment_id: SYN-009
+    system_name: Eligibility Recommendation Service
+    business_purpose: Recommend access to a fictional benefit with no review before outcome delivery.
+    accountable_owner: Fictional Program Services Director
+    autonomy_level: conditionally_autonomous
+    information_sensitivity: internal
+    human_review: no_prior_review
+    action_authority: recommend
+    system_access: standard
+    external_reach: bounded
+    reversibility: difficult
+    decision_impact: regulated_or_consequential
+    agent_capabilities: []
+    expected:
+      status: evaluated
+      baseline_tier: tier_3
+      final_tier: tier_1
+      applied_rule_ids: [ER-003, ER-004]
+      rationale: Consequential, difficult-to-reverse outcomes and absent prior review both apply.
+
+  - assessment_id: SYN-010
+    system_name: Incomplete Intake Example
+    business_purpose: Demonstrate fail-closed handling when a critical classification is absent.
+    accountable_owner: Fictional Governance Product Owner
+    autonomy_level: human_supervised
+    information_sensitivity:
+    human_review: prior_to_each_meaningful_action
+    action_authority: generate_only
+    system_access: none
+    external_reach: none
+    reversibility: easy
+    decision_impact: none
+    agent_capabilities: []
+    expected:
+      status: insufficient_information
+      baseline_tier:
+      final_tier:
+      missing_inputs: [information_sensitivity]
+      applied_rule_ids: []
+      rationale: The engine must not infer a missing critical fact.
+
+  - assessment_id: SYN-011
+    system_name: Autonomous Confidential Analysis Agent
+    business_purpose: Analyze synthetic confidential planning data and recommend internal actions.
+    accountable_owner: Fictional Planning Director
+    autonomy_level: autonomous
+    information_sensitivity: confidential
+    human_review: no_prior_review
+    action_authority: recommend
+    system_access: standard
+    external_reach: none
+    reversibility: recoverable_with_effort
+    decision_impact: operational
+    agent_capabilities: []
+    expected:
+      status: evaluated
+      baseline_tier: tier_1
+      final_tier: tier_1
+      applied_rule_ids: [ER-007]
+      rationale: Autonomous use of Confidential information is Tier 1 and activates its backstop rule.

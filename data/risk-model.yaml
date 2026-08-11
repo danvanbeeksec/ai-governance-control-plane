@@ -1,0 +1,132 @@
+model:
+  id: ai-governance-inherent-risk
+  version: 0.1.0
+  decision_type: inherent_ai_system_risk
+  tier_order: [tier_1, tier_2, tier_3]
+  no_downward_adjustment: true
+
+required_inputs:
+  - assessment_id
+  - system_name
+  - business_purpose
+  - accountable_owner
+  - autonomy_level
+  - information_sensitivity
+  - human_review
+  - action_authority
+  - system_access
+  - agent_capabilities
+  - external_reach
+  - reversibility
+  - decision_impact
+
+enums:
+  autonomy_level: [autonomous, conditionally_autonomous, human_supervised]
+  information_sensitivity: [public, internal, confidential, restricted]
+  human_review: [prior_to_each_meaningful_action, checkpoints_or_exceptions, no_prior_review]
+  action_authority: [generate_only, recommend, modify_nonproduction, modify_production, execute_material_transaction, safety_relevant_action]
+  system_access: [none, standard, privileged]
+  agent_capabilities: [external_tools, external_communication, delegation, persistent_memory]
+  external_reach: [none, bounded, broad]
+  reversibility: [easy, recoverable_with_effort, difficult]
+  decision_impact: [none, operational, consequential, regulated_or_consequential]
+
+baseline_matrix:
+  autonomous:
+    public: tier_2
+    internal: tier_2
+    confidential: tier_1
+    restricted: tier_1
+  conditionally_autonomous:
+    public: tier_3
+    internal: tier_3
+    confidential: tier_2
+    restricted: tier_1
+  human_supervised:
+    public: tier_3
+    internal: tier_3
+    confidential: tier_3
+    restricted: tier_1
+
+elevation_rules:
+  - id: ER-001
+    name: production_or_material_action_without_prior_review
+    when:
+      action_authority:
+        in: [modify_production, execute_material_transaction, safety_relevant_action]
+      human_review:
+        in: [checkpoints_or_exceptions, no_prior_review]
+    minimum_tier: tier_1
+    reason: Material, production, or safety-relevant action can occur without prior human approval.
+
+  - id: ER-002
+    name: privileged_agent_capability_combination
+    when:
+      system_access: privileged
+      agent_capabilities:
+        any_of: [external_tools, external_communication, delegation, persistent_memory]
+    minimum_tier: tier_2
+    reason: Privileged access is combined with an agent capability that expands reach or persistence.
+
+  - id: ER-003
+    name: consequential_and_difficult_to_reverse
+    when:
+      decision_impact:
+        in: [consequential, regulated_or_consequential]
+      reversibility: difficult
+    minimum_tier: tier_1
+    reason: Consequential impact is difficult to reverse after it occurs.
+
+  - id: ER-004
+    name: regulated_decision_without_prior_review
+    when:
+      decision_impact: regulated_or_consequential
+      human_review:
+        in: [checkpoints_or_exceptions, no_prior_review]
+    minimum_tier: tier_1
+    reason: A regulated or consequential decision can occur without prior human review.
+
+  - id: ER-005
+    name: autonomous_external_communication_at_scale
+    when:
+      autonomy_level: autonomous
+      external_reach: broad
+      agent_capabilities:
+        any_of: [external_communication]
+    minimum_tier: tier_1
+    reason: Autonomous external communication has broad reach.
+
+  - id: ER-006
+    name: restricted_information_backstop
+    when:
+      information_sensitivity: restricted
+    minimum_tier: tier_1
+    reason: Restricted information always requires Tier 1 governance.
+
+  - id: ER-007
+    name: autonomous_confidential_information_backstop
+    when:
+      autonomy_level: autonomous
+      information_sensitivity: confidential
+    minimum_tier: tier_1
+    reason: Autonomous operation involving Confidential information requires Tier 1 governance.
+
+explainability:
+  required_output_fields:
+    - status
+    - assessment_id
+    - model_id
+    - model_version
+    - baseline_inputs
+    - baseline_tier
+    - applied_rules
+    - final_tier
+    - explanation
+    - human_review_required
+  applied_rule_fields: [rule_id, reason, prior_tier, resulting_tier, changed_tier]
+  requirements:
+    - Preserve the matrix inputs and baseline result.
+    - Identify every matched elevation rule, including rules that confirm an already-high tier.
+    - Never infer missing required facts.
+    - Never reduce inherent risk based on controls.
+    - State that a qualified human owns the final decision.
