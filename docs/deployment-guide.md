@@ -41,7 +41,7 @@ commit in `requirements.txt`. The application then verifies the packaged artifac
 ## Hosted verification checklist
 
 - The page title, favicon, sidebar, definitions, disclaimers, and repository links render.
-- The sidebar reports framework version 0.1.0 and 35 verified controls.
+- The sidebar reports framework version 1.0.0 and 70 verified controls.
 - Each bundled synthetic example loads its own intake values.
 - Every example produces its documented baseline, final tier, and risk elevation rules.
 - The control categories account for every framework control exactly once.
