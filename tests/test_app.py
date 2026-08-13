@@ -1,61 +1,40 @@
 from streamlit.testing.v1 import AppTest
 
 
-def test_switching_example_loads_its_values_and_applies_risk_rule(root, monkeypatch):
+def test_inventory_and_assessment_are_separate_views(root, monkeypatch):
     monkeypatch.delenv("AI_CONTROL_FRAMEWORK_PATH", raising=False)
     app = AppTest.from_file(str(root / "app.py")).run(timeout=10)
 
-    assert [item.value for item in app.title] == ["AI System Risk & Control Assessor"]
-    captions = [item.value for item in app.caption]
-    assert (
-        "Assess inherent AI system risk, understand the decision rationale, and identify controls "
-        "requiring implementation or further review."
-        in captions
-    )
-    assert "A demonstration application from the AI Governance Control Plane." in captions
-    assert "A transparent, deterministic demonstration using synthetic information only." not in captions
+    assert "AI inventory" in [item.value for item in app.title]
+    assert any(item.label == "Risk tier" for item in app.metric)
+    assert any(item.label == "View full record" for item in app.button)
+    assert not any(item.label == "Run assessment" for item in app.button)
 
-    example_selector = next(
-        item for item in app.selectbox if item.label == "Start with a synthetic example"
-    )
-    example_selector.set_value("Procurement Workflow Agent").run(timeout=10)
+    navigation = next(item for item in app.selectbox if item.label == "Go to")
+    navigation.set_value("➕  New assessment").run(timeout=10)
+    assert "New assessment" in [item.value for item in app.title]
+    assert any(item.label == "Run assessment" for item in app.button)
+    assert not any(item.label == "Submit to inventory" for item in app.button)
 
-    selected_values = {item.label: item.value for item in app.selectbox}
-    assert selected_values["Autonomy"] == "Conditionally autonomous"
-    assert selected_values["Information sensitivity"] == "Confidential"
-    assert selected_values["Action authority"] == "Execute a material transaction"
 
-    app.button[0].click().run(timeout=10)
+def test_assessment_is_draft_until_explicit_submission(root, monkeypatch):
+    monkeypatch.delenv("AI_CONTROL_FRAMEWORK_PATH", raising=False)
+    app = AppTest.from_file(str(root / "app.py")).run(timeout=10)
+    next(item for item in app.selectbox if item.label == "Go to").set_value("➕  New assessment").run(timeout=10)
 
-    assert not app.exception
+    example = next(item for item in app.selectbox if item.label == "Synthetic example")
+    example.set_value("Procurement Workflow Agent").run(timeout=10)
+    assessment_id = next(item for item in app.text_input if item.label == "Assessment ID")
+    assert assessment_id.value == "DEMO-001"
+
+    next(item for item in app.button if item.label == "Run assessment").click().run(timeout=10)
     metrics = {item.label: item.value for item in app.metric}
     assert metrics["Inherent risk"] == "Tier 1"
-    assert metrics["Baseline"] == "Tier 2"
-    assert metrics["Risk elevation rules"] == "1"
-    assert metrics["Required controls"] == "21"
-    assert "Framework controls" not in metrics
-    rendered_text = " ".join(item.value for item in app.markdown)
-    assert "Risk elevation rule ER-001 applied" in rendered_text
-    assert "autonomy_level" not in rendered_text
-    subheadings = [item.value for item in app.subheader]
-    required_index = next(
-        index for index, value in enumerate(subheadings) if value.startswith("Required system controls")
-    )
-    decision_index = next(
-        index
-        for index, value in enumerate(subheadings)
-        if value.startswith("Controls requiring an applicability decision")
-    )
-    enterprise_index = next(
-        index for index, value in enumerate(subheadings) if value.startswith("Enterprise dependencies")
-    )
-    assert required_index < decision_index < enterprise_index
-    assert "These controls are not optional" in rendered_text
-    assert "assign an accountable provider" not in rendered_text
-    assert "the owner remains accountable for confirming completion" in rendered_text
-    assert any(item.label == "Autonomy" for item in app.sidebar.expander)
-    assert any(item.label == "Action authority" for item in app.sidebar.expander)
-    assert any(item.label == "Understanding risk tiers" for item in app.sidebar.expander)
-    assert not app.get("file_uploader")
-    assert any("use fictional or synthetic information only" in item.value for item in app.warning)
-    assert "About this demonstration" in [item.label for item in app.sidebar.expander]
+    assert any(item.label == "Submit to inventory" for item in app.button)
+    assert "Nothing has been added to inventory yet" in " ".join(item.value for item in app.info)
+
+    next(item for item in app.button if item.label == "Submit to inventory").click().run(timeout=10)
+    assert any("DEMO-001 was submitted" in item.value for item in app.success)
+    next_id = next(item for item in app.text_input if item.label == "Assessment ID")
+    assert next_id.value == "DEMO-002"
+    assert next(item for item in app.text_input if item.label == "System name").value == ""

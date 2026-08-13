@@ -1,0 +1,78 @@
+{
+  "schema_version": "0.2.0",
+  "synthetic_data_notice": "All records, organizations, people, providers, systems, and facts are fictional.",
+  "systems": [
+    {
+      "system_id": "SYS-SYN-001",
+      "name": "Public Research Summarizer",
+      "purpose": "Summarize public AI research for analyst review.",
+      "provider": "Northstar Labs",
+      "model": "Summarizer 2",
+      "owners": {"business_owner": "Fictional Research Operations Lead", "technical_owner": "Fictional Knowledge Engineering Lead", "governance_reviewer": "Fictional AI Governance Adviser"},
+      "lifecycle_state": "active", "record_type": "synthetic_example", "visibility": "demo",
+      "autonomy_level": "human_supervised", "information_sensitivity": "public", "current_risk_tier": "tier_3", "vendor_status": "vendor",
+      "business_unit": "Research", "deployment_context": "Internal analyst workspace",
+      "change_triggers": ["Provider model change", "Access to nonpublic sources"]
+    },
+    {
+      "system_id": "SYS-SYN-002",
+      "name": "Customer Response Drafting Assistant",
+      "purpose": "Draft service responses using fictional customer records for agent approval.",
+      "provider": "Harborlight AI",
+      "model": "Service Writer",
+      "owners": {"business_owner": "Fictional Customer Operations Director", "technical_owner": "Fictional Service Platform Manager", "vendor_owner": "Fictional Vendor Manager"},
+      "lifecycle_state": "assessing", "record_type": "synthetic_example", "visibility": "demo",
+      "autonomy_level": "human_supervised", "information_sensitivity": "confidential", "current_risk_tier": "tier_3", "vendor_status": "vendor",
+      "business_unit": "Customer Operations", "deployment_context": "Agent desktop",
+      "change_triggers": ["New customer data category", "Direct customer communication"]
+    },
+    {
+      "system_id": "SYS-SYN-003",
+      "name": "Procurement Workflow Agent",
+      "purpose": "Create fictional purchase orders within approved thresholds.",
+      "provider": "Juniper Workflow Systems",
+      "model": "Procure Agent 1",
+      "owners": {"business_owner": "Fictional Procurement Director", "technical_owner": "Fictional Automation Lead", "governance_reviewer": "Fictional Risk Partner"},
+      "lifecycle_state": "proposed", "record_type": "synthetic_example", "visibility": "demo",
+      "autonomy_level": "conditionally_autonomous", "information_sensitivity": "confidential", "current_risk_tier": "tier_1", "vendor_status": "hybrid",
+      "business_unit": "Procurement", "deployment_context": "Bounded procurement workflow",
+      "change_triggers": ["Transaction threshold change", "New connector", "Autonomy increase"]
+    },
+    {
+      "system_id": "SYS-SYN-004",
+      "name": "Public Status Communication Agent",
+      "purpose": "Publish generated service-status updates to a fictional public audience.",
+      "provider": "Internal Platform Team",
+      "model": "Status Agent",
+      "owners": {"business_owner": "Fictional Service Communications Lead", "technical_owner": "Fictional Reliability Engineering Lead"},
+      "lifecycle_state": "suspended", "record_type": "synthetic_example", "visibility": "demo",
+      "autonomy_level": "autonomous", "information_sensitivity": "public", "current_risk_tier": "tier_1", "vendor_status": "internal",
+      "business_unit": "Technology", "deployment_context": "Public status channel",
+      "change_triggers": ["Audience expansion", "New publishing destination", "Human-review change"]
+    },
+    {
+      "system_id": "SYS-SYN-005",
+      "name": "Restricted Incident Evidence Assistant",
+      "purpose": "Summarize synthetic security evidence for analyst approval.",
+      "provider": "Internal Security Engineering",
+      "model": "Evidence Assistant",
+      "owners": {"business_owner": "Fictional Security Response Lead", "technical_owner": "Fictional Security Engineering Manager", "governance_reviewer": "Fictional Privacy Counsel"},
+      "lifecycle_state": "approved", "record_type": "synthetic_example", "visibility": "demo",
+      "autonomy_level": "human_supervised", "information_sensitivity": "restricted", "current_risk_tier": "tier_1", "vendor_status": "internal",
+      "business_unit": "Security", "deployment_context": "Isolated investigation workspace",
+      "change_triggers": ["New evidence source", "External provider introduction", "Retention change"]
+    },
+    {
+      "system_id": "SYS-SYN-006",
+      "name": "Eligibility Recommendation Service",
+      "purpose": "Recommend access to a fictional benefit before a human review step is added.",
+      "provider": "Civic Path Analytics",
+      "model": "Eligibility Recommender",
+      "owners": {"business_owner": "Fictional Program Services Director", "technical_owner": "Fictional Decision Systems Lead", "vendor_owner": "Fictional Supplier Assurance Manager"},
+      "lifecycle_state": "retired", "record_type": "synthetic_example", "visibility": "demo",
+      "autonomy_level": "conditionally_autonomous", "information_sensitivity": "internal", "current_risk_tier": "tier_1", "vendor_status": "vendor",
+      "business_unit": "Program Services", "deployment_context": "Fictional benefits portal",
+      "change_triggers": ["Decision impact change", "Human-review design", "Data category change"]
+    }
+  ]
+}
