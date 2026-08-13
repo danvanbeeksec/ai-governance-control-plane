@@ -159,6 +159,18 @@ def validate_applicability_methodology(
     treatment_by_id = {item.control_id: item for item in methodology.controls}
     for control_id, treatment in treatment_by_id.items():
         framework_control = framework_by_id[control_id]
+        metadata = framework_control.applicability_metadata
+        if metadata is not None:
+            framework_triggers = [group.model_dump(mode="json") for group in metadata.trigger_conditions]
+            methodology_triggers = [group.model_dump(mode="json") for group in treatment.triggers]
+            if metadata.mode != treatment.treatment or framework_triggers != methodology_triggers:
+                raise ApplicabilityContractError(
+                    f"Methodology treatment for {control_id} diverges from framework applicability metadata"
+                )
+            if metadata.rationale != treatment.rationale:
+                raise ApplicabilityContractError(
+                    f"Methodology rationale for {control_id} diverges from framework authority"
+                )
         if framework_control.layer == "enterprise" and treatment.section != "enterprise_dependencies":
             raise ApplicabilityContractError(
                 f"Enterprise control {control_id} must appear in enterprise_dependencies"
