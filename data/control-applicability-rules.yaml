@@ -1,9 +1,9 @@
 schema_version: "1.0"
 methodology:
   id: ai-control-applicability
-  version: "0.1.0"
+  version: "1.0.0"
   status: approved
-  framework_library_version: "0.1.0"
+  framework_library_version: "1.0.0"
   principle: Assessment facts may establish applicability, but absence of a trigger does not establish non-applicability.
 outcomes:
   applicable: The control applies based on a universal treatment or a matched factual trigger.
@@ -279,3 +279,235 @@ controls:
     enterprise_dependency: true
     rationale: Provider concentration, continuity, and exit dependencies require information not present in the current intake.
     unresolved_questions: ["Could loss or material change of a provider, model, platform, or data source disrupt important operations or controls?"]
+
+  - control_id: AI-GOV-007
+    section: enterprise_dependencies
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Every governed AI portfolio depends on defined responsible-AI objectives and measures.
+  - control_id: AI-GOV-008
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: true
+    rationale: Exception and residual-risk treatment depends on whether an applicable requirement cannot be met as designed.
+    unresolved_questions: ["Does this system require an exception, compensating control, or residual-risk acceptance?"]
+  - control_id: AI-GOV-009
+    section: enterprise_dependencies
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Every governed AI portfolio depends on periodic management review of the governance system.
+  - control_id: AI-GOV-010
+    section: system_controls
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Every AI system requires a route for concerns, misuse, and adverse impacts to be reported and escalated.
+
+  - control_id: AI-USE-001
+    section: enterprise_dependencies
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Every assessed use depends on an enterprise process for approving AI tools and configurations.
+  - control_id: AI-USE-002
+    section: enterprise_dependencies
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Every assessed use depends on role-appropriate AI literacy and awareness.
+  - control_id: AI-USE-003
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Operational or consequential impact establishes a clear need for user verification of material outputs.
+    triggers:
+      - all: [{field: decision_impact, operator: in, values: [operational, consequential, regulated_or_consequential]}]
+      - all: [{field: action_authority, operator: in, values: [recommend, modify_nonproduction, modify_production, execute_material_transaction, safety_relevant_action]}]
+    unresolved_questions: ["Could an incorrect output create more than negligible harm in the intended context?"]
+  - control_id: AI-USE-004
+    section: enterprise_dependencies
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Workforce AI use depends on enterprise rules for confidential and restricted information.
+
+  - control_id: AI-INV-001
+    section: enterprise_dependencies
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Reliable governance depends on enterprise discovery and reconciliation beyond self-reported intake.
+  - control_id: AI-INV-002
+    section: system_controls
+    treatment: universal
+    enterprise_dependency: false
+    rationale: Every material AI system requires documented models, services, data sources, tools, and dependencies.
+  - control_id: AI-INV-003
+    section: system_controls
+    treatment: universal
+    enterprise_dependency: false
+    rationale: Every inventory record requires a current lifecycle state and proportionate review.
+
+  - control_id: AI-RSK-001
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: true
+    rationale: Legal, regulatory, contractual, and sector applicability is not established by the current intake.
+    unresolved_questions: ["Which legal, regulatory, contractual, or sector requirements apply to this system and the organization's role?"]
+  - control_id: AI-RSK-002
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Consequential impact or external reach establishes a need for a proportionate AI impact assessment.
+    triggers:
+      - all: [{field: decision_impact, operator: in, values: [consequential, regulated_or_consequential]}]
+      - all: [{field: external_reach, operator: in, values: [bounded, broad]}]
+    unresolved_questions: ["Could the system materially affect individuals, employees, customers, or external parties?"]
+  - control_id: AI-RSK-003
+    section: system_controls
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Every completed assessment requires documented treatment of identified risks and accountable acceptance of remaining risk.
+
+  - control_id: AI-DAT-005
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: false
+    rationale: Data acquisition methods and usage rights are not represented in the current intake.
+    unresolved_questions: ["How was each material dataset acquired, and what rights or restrictions govern its AI use?"]
+  - control_id: AI-DAT-006
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: false
+    rationale: Training, evaluation, retrieval, grounding, and feedback transformations are not represented in the current intake.
+    unresolved_questions: ["Is data prepared or transformed for training, evaluation, retrieval, grounding, or feedback?"]
+  - control_id: AI-DAT-007
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: false
+    rationale: The current intake does not establish whether data quality or representativeness materially affects behavior or decisions.
+    unresolved_questions: ["Which data materially affects behavior or outcomes, and how are quality and representativeness evaluated?"]
+  - control_id: AI-DAT-008
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: false
+    rationale: Retrieval, grounding, enterprise search, and memory-retrieval behavior are not represented in the current intake.
+    unresolved_questions: ["Does the system retrieve or ground responses in documents, knowledge stores, embeddings, or agent memory?"]
+  - control_id: AI-DAT-009
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: false
+    rationale: Feedback loops, adaptive behavior, and provider product-improvement settings are not represented in the current intake.
+    unresolved_questions: ["Can user feedback, interactions, or telemetry change the system or be used for provider improvement?"]
+
+  - control_id: AI-MOD-001
+    section: system_controls
+    treatment: universal
+    enterprise_dependency: false
+    rationale: Every material AI system requires model and behavior-configuration traceability.
+  - control_id: AI-MOD-002
+    section: system_controls
+    treatment: universal
+    enterprise_dependency: false
+    rationale: Every material model requires documented suitability evaluation and approval for its intended use.
+  - control_id: AI-MOD-003
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: false
+    rationale: Production status and the scope of model, prompt, retrieval, and safety-setting changes are not established by the intake.
+    unresolved_questions: ["Which behavior-affecting components can change, and what change-control process applies?"]
+  - control_id: AI-MOD-004
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Operational or consequential outcomes establish a clear need for model evaluation and acceptance thresholds.
+    triggers:
+      - all: [{field: decision_impact, operator: in, values: [operational, consequential, regulated_or_consequential]}]
+      - all: [{field: action_authority, operator: in, values: [recommend, modify_nonproduction, modify_production, execute_material_transaction, safety_relevant_action]}]
+    unresolved_questions: ["Could model behavior materially affect system outcomes or control effectiveness?"]
+
+  - control_id: AI-PLT-001
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: false
+    rationale: Shared, hosted, multi-tenant, and multi-environment platform architecture is not represented in the intake.
+    unresolved_questions: ["Does the system use a shared, hosted, multi-tenant, or multi-environment AI platform?"]
+  - control_id: AI-PLT-002
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Privileged system access establishes an AI platform administration control need.
+    triggers:
+      - all: [{field: system_access, operator: in, values: [privileged]}]
+    unresolved_questions: ["Who can administer models, safety settings, data stores, gateways, tenants, or vendor support access?"]
+  - control_id: AI-PLT-003
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: External reach, protected service access, or tool use establishes an endpoint and gateway governance need.
+    triggers:
+      - all: [{field: external_reach, operator: in, values: [bounded, broad]}]
+      - all: [{field: system_access, operator: in, values: [standard, privileged]}]
+      - all: [{field: agent_capabilities, operator: contains_any, values: [external_tools]}]
+    unresolved_questions: ["Does the system expose or consume model endpoints, gateways, brokers, or AI service APIs?"]
+
+  - control_id: AI-HUM-001
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: Autonomy, consequential impact, external reach, or material action establishes a need for effective human oversight.
+    triggers:
+      - all: [{field: autonomy_level, operator: in, values: [autonomous, conditionally_autonomous]}]
+      - all: [{field: decision_impact, operator: in, values: [consequential, regulated_or_consequential]}]
+      - all: [{field: external_reach, operator: in, values: [bounded, broad]}]
+      - all: [{field: action_authority, operator: in, values: [modify_production, execute_material_transaction, safety_relevant_action]}]
+    unresolved_questions: ["Do reviewers have sufficient information, time, competence, and authority to intervene effectively?"]
+  - control_id: AI-HUM-002
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: true
+    rationale: Consequential decision impact establishes accountability and contestability requirements.
+    triggers:
+      - all: [{field: decision_impact, operator: in, values: [consequential, regulated_or_consequential]}]
+    unresolved_questions: ["Can an individual or customer be materially affected, and what review, appeal, or correction route is available?"]
+  - control_id: AI-HUM-003
+    section: system_controls
+    treatment: conditional
+    enterprise_dependency: false
+    rationale: External reach or material decision influence establishes a clear disclosure and user-information need.
+    triggers:
+      - all: [{field: external_reach, operator: in, values: [bounded, broad]}]
+      - all: [{field: decision_impact, operator: in, values: [operational, consequential, regulated_or_consequential]}]
+    unresolved_questions: ["Do users or affected parties need disclosure of AI interaction, generated content, limitations, or human responsibilities?"]
+
+  - control_id: AI-OPS-005
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: false
+    rationale: Production status and material model, data, retrieval, provider, and context drift are not established by the intake.
+    unresolved_questions: ["Which changing models, data, retrieval sources, providers, or contextual factors could materially affect outcomes?"]
+  - control_id: AI-OPS-006
+    section: system_controls
+    treatment: universal
+    enterprise_dependency: true
+    rationale: Every governed AI system depends on a process to record, correct, and verify material deficiencies and nonconformities.
+
+  - control_id: AI-VSC-006
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: true
+    rationale: Third-party involvement and provider training or improvement settings are not established by the current intake.
+    unresolved_questions: ["Does a third party receive non-public data, and can it use prompts, outputs, telemetry, or artifacts for training or improvement?"]
+  - control_id: AI-VSC-007
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: true
+    rationale: Supplier storage and derivation of AI artifacts are not established by the current intake.
+    unresolved_questions: ["Can a supplier store or derive prompts, outputs, embeddings, fine-tunes, memory, logs, or other artifacts from organizational data?"]
+  - control_id: AI-VSC-008
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: true
+    rationale: Material third-party services and their incident obligations are not established by the current intake.
+    unresolved_questions: ["Which material AI suppliers require defined incident notification, evidence preservation, cooperation, and remediation obligations?"]
+  - control_id: AI-VSC-009
+    section: system_controls
+    treatment: human_determination
+    enterprise_dependency: true
+    rationale: Supplier materiality and available assurance are not established by the current intake.
+    unresolved_questions: ["Could supplier failure create material impact, and what independent assurance, evidence, or audit rights are available?"]
