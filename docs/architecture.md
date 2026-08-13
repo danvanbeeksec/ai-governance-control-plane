@@ -6,6 +6,8 @@
 
 The installable package includes the risk model, applicability methodology, and framework source manifest as read-only resources. `GovernanceDecisionService.from_packaged_resources()` combines those resources with the separately installed authoritative Framework artifact. Path-based construction remains available for reviewed local overrides.
 
+Guided intake is a validation boundary, not a reasoning engine. It derives field requirements from the canonical assessment model, reports missing and invalid facts, and accepts client-proposed inferences only after explicit confirmation. Risk and control evaluation begin only after a complete canonical assessment exists.
+
 ```text
 Framework authority -> validated loader -> GovernanceDecisionService -> Streamlit / MCP / API
                                                |

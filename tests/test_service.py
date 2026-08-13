@@ -42,3 +42,11 @@ def test_service_constructs_from_packaged_resources(root):
     assert result.decision.framework_source.status == "loaded"
     assert result.decision.framework_source.library_version == "1.1.0"
     assert result.recommendations.summary.total_controls == 70
+
+
+def test_service_exposes_guided_intake(root, framework_path):
+    subject = make_service(root, framework_path)
+    requirements = subject.get_assessment_requirements()
+    result = subject.validate_assessment_input({"assessment_id": "partial"})
+    assert requirements.fields
+    assert result.status == "needs_information"

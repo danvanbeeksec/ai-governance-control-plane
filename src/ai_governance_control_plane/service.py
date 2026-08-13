@@ -20,6 +20,13 @@ from .framework_loader import (
     load_framework_packaged_bytes,
 )
 from .models import Assessment
+from .intake import (
+    AssessmentRequirements,
+    IntakeValidationResult,
+    ProposedInference,
+    assessment_requirements,
+    validate_assessment_input,
+)
 from .resources import (
     applicability_methodology_bytes,
     framework_manifest_bytes,
@@ -64,6 +71,16 @@ class GovernanceDecisionService:
             load_model_bytes(risk_model_bytes()),
             load_applicability_methodology_bytes(applicability_methodology_bytes()),
         )
+
+    def get_assessment_requirements(self) -> AssessmentRequirements:
+        return assessment_requirements()
+
+    def validate_assessment_input(
+        self,
+        facts: dict[str, Any],
+        proposed_inferences: list[ProposedInference | dict[str, Any]] | None = None,
+    ) -> IntakeValidationResult:
+        return validate_assessment_input(facts, proposed_inferences)
 
     def assess_ai_system(self, assessment: Assessment | dict[str, Any]) -> AssessmentResult:
         return run_assessment_workflow(

@@ -8,14 +8,16 @@ from .inventory import (
     add_seed_history,
 )
 from .models import AISystem, Assessment, AssessmentHistoryRecord, DecisionRecord, OwnerRoles
+from .intake import AssessmentRequirements, IntakeValidationResult, ProposedInference
 from .risk_engine import AssessmentError, evaluate_assessment, evaluate_assessment_record, load_model
 from .service import DesignComparison, GovernanceDecisionService
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
     "Assessment",
     "AssessmentHistoryRecord",
+    "AssessmentRequirements",
     "AISystem",
     "AssessmentError",
     "ControlRecommendationSet",
@@ -24,7 +26,9 @@ __all__ = [
     "GovernanceDecisionService",
     "__version__",
     "InventoryRepository",
+    "IntakeValidationResult",
     "OwnerRoles",
+    "ProposedInference",
     "RecommendationError",
     "SessionInventoryRepository",
     "SQLiteInventoryRepository",
