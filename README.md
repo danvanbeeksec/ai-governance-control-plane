@@ -26,6 +26,8 @@ The reusable `GovernanceDecisionService` is the application boundary for Streaml
 
 The Control Plane is installable as a Python package. Its risk model, applicability methodology, and framework provenance manifest are included as read-only package resources. Installed consumers can use `GovernanceDecisionService.from_packaged_resources()` without a sibling Control Plane checkout.
 
+Guided intake is available through `get_assessment_requirements()` and `validate_assessment_input()`. The service identifies supplied, missing, invalid, and unconfirmed inferred values without assigning risk until the canonical assessment is complete. Proposed inferences require an explicit basis and confirmation.
+
 Every conclusion must trace to submitted facts and visible rules. No model makes or obscures the governance decision.
 
 ## Intended users
