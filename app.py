@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 import sys
 from typing import Any
@@ -23,6 +24,7 @@ from ai_governance_control_plane.framework_loader import (  # noqa: E402
     load_framework_bytes,
 )
 from ai_governance_control_plane.inventory import (  # noqa: E402
+    add_seed_history,
     find_potential_duplicates,
     load_seed_systems,
     repository_for_mode,
@@ -155,6 +157,45 @@ def inventory_repository():
     if state_key not in st.session_state:
         st.session_state[state_key] = repository_for_mode(mode, load_seed_systems(INVENTORY_SEED))
     return mode, st.session_state[state_key]
+
+
+def seed_assessment_history(inventory, framework: LoadedFramework | None) -> None:
+    """Evaluate synthetic inventory through the same workflow as user submissions."""
+    if framework is None:
+        return
+    examples = {item["assessment_id"]: item for item in load_examples()}
+    assessment_by_system = {
+        "SYS-SYN-001": "SYN-001",
+        "SYS-SYN-002": "SYN-003",
+        "SYS-SYN-003": "SYN-006",
+        "SYS-SYN-004": "SYN-007",
+        "SYS-SYN-005": "SYN-004",
+        "SYS-SYN-006": "SYN-009",
+    }
+    records = []
+    for system_id, assessment_id in assessment_by_system.items():
+        system = inventory.get_system(system_id)
+        if system is None:
+            continue
+        result = run_assessment_workflow(
+            Assessment.model_validate(examples[assessment_id]),
+            framework,
+            RISK_MODEL,
+            METHODOLOGY,
+        )
+        if system.current_risk_tier != result.decision.final_tier:
+            inventory.save_system(system.model_copy(update={"current_risk_tier": result.decision.final_tier}))
+        records.append(
+            AssessmentHistoryRecord(
+                history_id=f"HIST-{system_id}-001",
+                system_id=system_id,
+                assessment=result.assessment,
+                decision=result.decision,
+                control_applicability=result.recommendations.model_dump(mode="json"),
+                created_at=datetime(2026, 8, 1, 12, 0, tzinfo=timezone.utc),
+            )
+        )
+    add_seed_history(inventory, records)
 
 
 def local_framework_path() -> Path | None:
@@ -349,6 +390,30 @@ def render_record_detail(system: AISystem, inventory) -> None:
             st.markdown(f"**Framework digest:** `{item.decision.framework_source.digest}`")
             st.markdown(f"**Required system controls:** {item.control_applicability['summary']['applicable_system_controls']}")
             st.markdown(f"**Controls requiring a decision:** {item.control_applicability['summary']['undetermined_system_controls']}")
+            required_tab, unresolved_tab = st.tabs(
+                ["Required controls", "Controls requiring a decision"]
+            )
+            with required_tab:
+                required_controls = item.control_applicability["applicable_system_controls"]
+                if not required_controls:
+                    st.info("No system controls were established as applicable from the recorded facts.")
+                for recommendation in required_controls:
+                    control = recommendation["control"]
+                    st.markdown(f"**{control['control_id']} · {control['title']}**")
+                    st.write(recommendation["rationale"])
+                    st.caption(control["requirement"])
+                    st.divider()
+            with unresolved_tab:
+                unresolved_controls = item.control_applicability["undetermined_system_controls"]
+                if not unresolved_controls:
+                    st.info("No controls require additional applicability information.")
+                for recommendation in unresolved_controls:
+                    control = recommendation["control"]
+                    st.markdown(f"**{control['control_id']} · {control['title']}**")
+                    st.write(recommendation["rationale"])
+                    for question in recommendation["unresolved_questions"]:
+                        st.write(f"• {question}")
+                    st.divider()
     complete_record = {
         "system": system.model_dump(mode="json"),
         "assessment_history": [item.model_dump(mode="json") for item in history],
@@ -389,6 +454,8 @@ with st.sidebar:
         )
         st.markdown("[Control plane repository](https://github.com/danvanbeeksec/ai-governance-control-plane)")
         st.markdown("[Authoritative control framework](https://github.com/danvanbeeksec/ai-governance-control-framework)")
+
+seed_assessment_history(inventory, framework)
 
 if data_mode == "demo":
     st.info("Demo Mode: new inventory records exist only in this browser session and are not retained.")

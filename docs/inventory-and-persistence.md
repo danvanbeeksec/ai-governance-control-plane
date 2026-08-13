@@ -57,6 +57,11 @@ Synthetic examples cover supervised and autonomous uses, public through restrict
 internal, vendor, and hybrid delivery, and multiple lifecycle states. Record types distinguish
 synthetic examples, temporary submissions, and locally managed inventory.
 
+Each synthetic inventory record is evaluated through the same deterministic risk and control
+workflow as a user submission. A fixed synthetic history event is added idempotently in both data
+modes, so record details show framework provenance, required controls, and controls that still need
+a human applicability decision. Reopening the application does not duplicate these seed events.
+
 ## Deferred roadmap
 
 Authentication, approval routing, evidence management, integrations, notifications, multi-tenancy,
