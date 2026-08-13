@@ -79,8 +79,9 @@ class GovernanceDecisionService:
         self,
         facts: dict[str, Any],
         proposed_inferences: list[ProposedInference | dict[str, Any]] | None = None,
+        managed_facts: dict[str, Any] | None = None,
     ) -> IntakeValidationResult:
-        return validate_assessment_input(facts, proposed_inferences)
+        return validate_assessment_input(facts, proposed_inferences, managed_facts)
 
     def assess_ai_system(self, assessment: Assessment | dict[str, Any]) -> AssessmentResult:
         return run_assessment_workflow(

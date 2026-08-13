@@ -20,7 +20,8 @@ COMPLETE = {
 
 def test_requirements_are_derived_from_assessment_contract():
     result = assessment_requirements()
-    assert {item.field for item in result.fields} == set(COMPLETE)
+    assert {item.field for item in result.fields} == set(COMPLETE) - {"assessment_id"}
+    assert result.managed_fields == ["assessment_id"]
     autonomy = next(item for item in result.fields if item.field == "autonomy_level")
     assert "autonomous" in autonomy.allowed_values
     assert "never infers facts" in result.inference_policy
@@ -59,3 +60,22 @@ def test_complete_supplied_facts_are_ready_without_inference():
     result = validate_assessment_input(COMPLETE)
     assert result.status == "ready_for_assessment"
     assert result.assessment is not None
+
+
+def test_managed_id_completes_assessment_without_user_supplied_id():
+    facts = {key: value for key, value in COMPLETE.items() if key != "assessment_id"}
+    result = validate_assessment_input(
+        facts, managed_facts={"assessment_id": "managed-001"}
+    )
+    assert result.status == "ready_for_assessment"
+    assert result.assessment is not None
+    assert result.assessment.assessment_id == "managed-001"
+    assert "assessment_id" not in result.supplied_facts
+
+
+def test_missing_managed_id_is_not_presented_as_user_question():
+    facts = {key: value for key, value in COMPLETE.items() if key != "assessment_id"}
+    result = validate_assessment_input(facts)
+    assert result.status == "needs_information"
+    assert result.missing_managed_fields == ["assessment_id"]
+    assert not any(issue.field == "assessment_id" for issue in result.issues)

@@ -28,6 +28,8 @@ The Control Plane is installable as a Python package. Its risk model, applicabil
 
 Guided intake is available through `get_assessment_requirements()` and `validate_assessment_input()`. The service identifies supplied, missing, invalid, and unconfirmed inferred values without assigning risk until the canonical assessment is complete. Proposed inferences require an explicit basis and confirmation.
 
+Assessment identifiers are managed technical metadata rather than user intake questions. Interface layers may pass an identifier through `managed_facts`; existing programmatic consumers may continue supplying `assessment_id` in the facts object.
+
 Every conclusion must trace to submitted facts and visible rules. No model makes or obscures the governance decision.
 
 ## Intended users
