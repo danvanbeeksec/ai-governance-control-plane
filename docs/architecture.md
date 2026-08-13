@@ -1,16 +1,5 @@
 # Architecture
 
-## Reusable service boundary
-
-`GovernanceDecisionService` loads a provenance-validated framework and composes the existing risk and applicability engines. Streamlit remains a presentation consumer. External interfaces must call this service rather than importing UI code or reimplementing governance rules.
-
-```text
-Framework authority -> validated loader -> GovernanceDecisionService -> Streamlit / MCP / API
-                                               |
-                                               +-> risk engine
-                                               +-> applicability engine
-```
-
 ## Objective
 
 Keep decision logic small, inspectable, and independent from the user interface. A reviewer should trace a result from submitted YAML through validation, classification, tiering, and summary generation without a machine-learning model or hidden service.

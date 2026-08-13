@@ -3,7 +3,7 @@ methodology:
   id: ai-control-applicability
   version: "1.0.0"
   status: approved
-  framework_library_version: "1.1.0"
+  framework_library_version: "1.0.0"
   principle: Assessment facts may establish applicability, but absence of a trigger does not establish non-applicability.
 outcomes:
   applicable: The control applies based on a universal treatment or a matched factual trigger.

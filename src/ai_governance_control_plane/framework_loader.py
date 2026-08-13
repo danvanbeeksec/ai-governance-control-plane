@@ -6,7 +6,6 @@ import argparse
 import hashlib
 import hmac
 from pathlib import Path
-from typing import Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -42,28 +41,6 @@ class FrameworkManifest(BaseModel):
     expected: ExpectedFramework
 
 
-class ApplicabilityCondition(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    field: str = Field(min_length=1)
-    operator: Literal["in", "contains_any"]
-    values: list[str] = Field(min_length=1)
-
-
-class ApplicabilityTriggerGroup(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    all: list[ApplicabilityCondition] = Field(min_length=1)
-
-
-class ApplicabilityMetadata(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    contexts: list[str] = Field(min_length=1)
-    mode: Literal["universal", "conditional", "human_determination"]
-    trigger_conditions: list[ApplicabilityTriggerGroup] = Field(default_factory=list)
-    required_inputs: list[str] = Field(default_factory=list)
-    exclusions: list[str] = Field(default_factory=list)
-    rationale: str = Field(min_length=1)
-
-
 class ControlRecord(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -74,7 +51,6 @@ class ControlRecord(BaseModel):
     objective: str = Field(min_length=1)
     requirement: str = Field(min_length=1)
     applicability: str = Field(min_length=1)
-    applicability_metadata: ApplicabilityMetadata | None = None
     evidence_examples: list[str] = Field(min_length=1)
     implementation_notes: str = Field(min_length=1)
     references: list[str] = Field(min_length=1)

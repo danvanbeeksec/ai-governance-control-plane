@@ -22,8 +22,6 @@ This is a governance product demonstration. It shows how governance intent can b
 
 The [AI Governance Control Framework](https://github.com/danvanbeeksec/ai-governance-control-framework) remains the external, authoritative governance asset. The control plane validates the pinned framework artifact and recommends controls through approved fact-based applicability rules. It does not copy or modify control authority, infer implementation, or create tier-based control bundles.
 
-The reusable `GovernanceDecisionService` is the application boundary for Streamlit, MCP, APIs, and future batch consumers. It exposes assessment, applicable-control retrieval, control explanation, and deterministic design-option comparison without importing UI concerns.
-
 Every conclusion must trace to submitted facts and visible rules. No model makes or obscures the governance decision.
 
 ## Intended users

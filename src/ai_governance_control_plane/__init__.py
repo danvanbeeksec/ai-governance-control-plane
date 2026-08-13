@@ -9,7 +9,6 @@ from .inventory import (
 )
 from .models import AISystem, Assessment, AssessmentHistoryRecord, DecisionRecord, OwnerRoles
 from .risk_engine import AssessmentError, evaluate_assessment, evaluate_assessment_record, load_model
-from .service import DesignComparison, GovernanceDecisionService
 
 __all__ = [
     "Assessment",
@@ -18,8 +17,6 @@ __all__ = [
     "AssessmentError",
     "ControlRecommendationSet",
     "DecisionRecord",
-    "DesignComparison",
-    "GovernanceDecisionService",
     "InventoryRepository",
     "OwnerRoles",
     "RecommendationError",
