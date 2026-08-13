@@ -93,9 +93,16 @@ class CompatibilityReport(BaseModel):
 
 def load_applicability_methodology(path: str | Path) -> ApplicabilityMethodology:
     try:
-        with Path(path).open(encoding="utf-8") as stream:
-            methodology = ApplicabilityMethodology.model_validate(yaml.safe_load(stream))
-    except (OSError, yaml.YAMLError, ValidationError) as exc:
+        return load_applicability_methodology_bytes(Path(path).read_bytes())
+    except OSError as exc:
+        raise ApplicabilityContractError(f"Applicability methodology is invalid: {exc}") from exc
+
+
+def load_applicability_methodology_bytes(content: bytes) -> ApplicabilityMethodology:
+    """Load and validate applicability policy from packaged or external bytes."""
+    try:
+        methodology = ApplicabilityMethodology.model_validate(yaml.safe_load(content))
+    except (yaml.YAMLError, ValidationError) as exc:
         raise ApplicabilityContractError(f"Applicability methodology is invalid: {exc}") from exc
     _validate_assessment_conditions(methodology)
     return methodology

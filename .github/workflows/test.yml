@@ -24,3 +24,5 @@ jobs:
         run: python -m pytest
       - name: Compile Python sources
         run: python -m compileall -q app.py src
+      - name: Build installable service wheel
+        run: python -m pip wheel . --no-deps --wheel-dir dist

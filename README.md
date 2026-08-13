@@ -24,6 +24,8 @@ The [AI Governance Control Framework](https://github.com/danvanbeeksec/ai-govern
 
 The reusable `GovernanceDecisionService` is the application boundary for Streamlit, MCP, APIs, and future batch consumers. It exposes assessment, applicable-control retrieval, control explanation, and deterministic design-option comparison without importing UI concerns.
 
+The Control Plane is installable as a Python package. Its risk model, applicability methodology, and framework provenance manifest are included as read-only package resources. Installed consumers can use `GovernanceDecisionService.from_packaged_resources()` without a sibling Control Plane checkout.
+
 Every conclusion must trace to submitted facts and visible rules. No model makes or obscures the governance decision.
 
 ## Intended users
@@ -143,6 +145,20 @@ verification, publication boundaries, updates, and rollback.
 python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
+
+## Install the reusable service
+
+```bash
+python -m pip install "git+https://github.com/danvanbeeksec/ai-governance-control-plane.git@<reviewed-commit>"
+```
+
+```python
+from ai_governance_control_plane import GovernanceDecisionService
+
+service = GovernanceDecisionService.from_packaged_resources()
+```
+
+The separately maintained Framework package supplies the authoritative controls. The Control Plane package supplies only decision logic and its versioned runtime policy resources.
 
 ## Validate the pinned framework
 

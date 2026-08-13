@@ -34,3 +34,11 @@ def test_service_compares_design_options(root, framework_path):
 def test_service_rejects_unknown_control(root, framework_path):
     with pytest.raises(KeyError, match="Unknown control ID"):
         make_service(root, framework_path).explain_control("AI-NOT-999")
+
+
+def test_service_constructs_from_packaged_resources(root):
+    subject = GovernanceDecisionService.from_packaged_resources()
+    result = subject.assess_ai_system(example(root))
+    assert result.decision.framework_source.status == "loaded"
+    assert result.decision.framework_source.library_version == "1.1.0"
+    assert result.recommendations.summary.total_controls == 70

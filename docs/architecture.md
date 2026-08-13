@@ -4,6 +4,8 @@
 
 `GovernanceDecisionService` loads a provenance-validated framework and composes the existing risk and applicability engines. Streamlit remains a presentation consumer. External interfaces must call this service rather than importing UI code or reimplementing governance rules.
 
+The installable package includes the risk model, applicability methodology, and framework source manifest as read-only resources. `GovernanceDecisionService.from_packaged_resources()` combines those resources with the separately installed authoritative Framework artifact. Path-based construction remains available for reviewed local overrides.
+
 ```text
 Framework authority -> validated loader -> GovernanceDecisionService -> Streamlit / MCP / API
                                                |

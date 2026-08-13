@@ -8,8 +8,24 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict
 
 from .applicability import ControlRecommendationSet
-from .framework_loader import ControlRecord, LoadedFramework, load_framework
+from .applicability_contract import (
+    ApplicabilityMethodology,
+    load_applicability_methodology,
+    load_applicability_methodology_bytes,
+)
+from .framework_loader import (
+    ControlRecord,
+    LoadedFramework,
+    load_framework,
+    load_framework_packaged_bytes,
+)
 from .models import Assessment
+from .resources import (
+    applicability_methodology_bytes,
+    framework_manifest_bytes,
+    risk_model_bytes,
+)
+from .risk_engine import load_model, load_model_bytes
 from .workflow import AssessmentResult, run_assessment_workflow
 
 
@@ -25,17 +41,34 @@ class DesignComparison(BaseModel):
 class GovernanceDecisionService:
     """UI-independent facade over the deterministic domain engines."""
 
-    def __init__(self, framework: LoadedFramework, risk_model_path: str | Path, methodology_path: str | Path) -> None:
+    def __init__(self, framework: LoadedFramework, risk_model: dict[str, Any], methodology: ApplicabilityMethodology) -> None:
         self.framework = framework
-        self.risk_model_path = Path(risk_model_path)
-        self.methodology_path = Path(methodology_path)
+        self.risk_model = risk_model
+        self.methodology = methodology
 
     @classmethod
     def from_paths(cls, framework_path: str | Path, manifest_path: str | Path, risk_model_path: str | Path, methodology_path: str | Path) -> "GovernanceDecisionService":
-        return cls(load_framework(framework_path, manifest_path), risk_model_path, methodology_path)
+        return cls(
+            load_framework(framework_path, manifest_path),
+            load_model(risk_model_path),
+            load_applicability_methodology(methodology_path),
+        )
+
+    @classmethod
+    def from_packaged_resources(cls) -> "GovernanceDecisionService":
+        """Construct the service entirely from installed package resources."""
+        from ai_governance_control_framework import controls_bytes
+
+        return cls(
+            load_framework_packaged_bytes(controls_bytes(), framework_manifest_bytes()),
+            load_model_bytes(risk_model_bytes()),
+            load_applicability_methodology_bytes(applicability_methodology_bytes()),
+        )
 
     def assess_ai_system(self, assessment: Assessment | dict[str, Any]) -> AssessmentResult:
-        return run_assessment_workflow(assessment, self.framework, self.risk_model_path, self.methodology_path)
+        return run_assessment_workflow(
+            assessment, self.framework, self.risk_model, self.methodology
+        )
 
     def get_applicable_controls(self, assessment: Assessment | dict[str, Any]) -> ControlRecommendationSet:
         return self.assess_ai_system(assessment).recommendations
