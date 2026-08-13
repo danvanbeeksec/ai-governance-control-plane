@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from datetime import datetime, timezone
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -26,6 +27,65 @@ Reversibility = Literal["easy", "recoverable_with_effort", "difficult"]
 DecisionImpact = Literal["none", "operational", "consequential", "regulated_or_consequential"]
 AgentCapability = Literal["external_tools", "external_communication", "delegation", "persistent_memory"]
 Tier = Literal["tier_1", "tier_2", "tier_3"]
+LifecycleState = Literal["proposed", "assessing", "approved", "active", "suspended", "retired"]
+RecordType = Literal["synthetic_example", "temporary_submission", "managed_inventory"]
+Visibility = Literal["demo", "private", "enterprise"]
+VendorStatus = Literal["internal", "vendor", "hybrid"]
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class OwnerRoles(BaseModel):
+    """Accountability roles kept distinct for future workflow use."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    business_owner: str = Field(min_length=1, max_length=200)
+    technical_owner: str | None = Field(default=None, max_length=200)
+    governance_reviewer: str | None = Field(default=None, max_length=200)
+    vendor_owner: str | None = Field(default=None, max_length=200)
+
+
+class AISystem(BaseModel):
+    """Durable conceptual parent for inventory, assessments, and decisions."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["0.2.0"] = "0.2.0"
+    system_id: str = Field(min_length=1, max_length=100)
+    name: str = Field(min_length=1, max_length=200)
+    purpose: str = Field(min_length=1, max_length=2000)
+    provider: str = Field(min_length=1, max_length=200)
+    model: str | None = Field(default=None, max_length=200)
+    owners: OwnerRoles
+    lifecycle_state: LifecycleState = "proposed"
+    record_type: RecordType
+    visibility: Visibility
+    autonomy_level: AutonomyLevel
+    information_sensitivity: InformationSensitivity
+    current_risk_tier: Tier | None = None
+    vendor_status: VendorStatus
+    business_unit: str | None = Field(default=None, max_length=200)
+    deployment_context: str | None = Field(default=None, max_length=500)
+    change_triggers: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class AssessmentHistoryRecord(BaseModel):
+    """Immutable assessment event and its provenance-bearing outputs."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    history_id: str = Field(min_length=1, max_length=100)
+    system_id: str = Field(min_length=1, max_length=100)
+    assessment: "Assessment"
+    decision: "DecisionRecord"
+    control_applicability: dict[str, Any]
+    created_at: datetime = Field(default_factory=utc_now)
 
 
 class Assessment(BaseModel):

@@ -7,12 +7,14 @@ Keep decision logic small, inspectable, and independent from the user interface.
 ## Flow
 
 ```text
-Synthetic YAML or Streamlit form
+Synthetic inventory or Streamlit form
   -> required-field and enum validation
   -> deterministic classifier
   -> risk-tier calculation
   -> decision-summary assembler
-  -> executive and detailed views
+  -> control applicability
+  -> append-only assessment history
+  -> inventory, executive, and detailed views
 ```
 
 ## Components
@@ -30,6 +32,7 @@ Synthetic YAML or Streamlit form
 | Demo UI | Load or collect a synthetic case and display results | Streamlit, implemented |
 | Fixtures | Fictional examples and expected results | YAML and JSON |
 | Tests | Models, rules, boundaries, and examples | pytest |
+| Inventory repository | AI System parents and assessment history | Session memory by default; local SQLite by explicit configuration |
 
 ## Current and proposed code structure
 
@@ -38,11 +41,13 @@ data/
 ├── control-applicability-rules.yaml
 ├── example-assessments.yaml
 ├── framework-source.yaml
+├── inventory-seed.json
 └── risk-model.yaml
 src/ai_governance_control_plane/
 ├── applicability.py
 ├── applicability_contract.py
 ├── framework_loader.py
+├── inventory.py
 ├── models.py
 ├── risk_engine.py
 ├── summarize.py
@@ -64,7 +69,7 @@ The risk engine remains independent from external control data. The framework is
 
 The canonical executable intake includes schema version, ID, system name, purpose, accountable owner, autonomy, information sensitivity, human review, action authority, system access, agent capabilities, external reach, reversibility, and decision impact. The richer JSON use-case examples are product-discovery material, not an executable schema.
 
-Decision output includes validation status, assessment and model versions, submitted facts, baseline tier, qualitative tier labels, rule trace, final tier, missing facts, unresolved questions, an executive summary, a human-decision warning, and reserved framework-provenance fields. Numeric scoring is intentionally excluded because the methodology rejects unsupported precision.
+Decision output includes validation status, assessment and model versions, submitted facts, baseline tier, qualitative tier labels, rule trace, final tier, missing facts, unresolved questions, an executive summary, a human-decision warning, and framework provenance. An immutable history event stores that decision with the submitted assessment and control-applicability output beneath its AI System parent. Numeric scoring is intentionally excluded because the methodology rejects unsupported precision.
 
 ## Design decisions
 
@@ -72,7 +77,8 @@ Decision output includes validation status, assessment and model versions, submi
 - Pure core functions testable without Streamlit.
 - Validated input remains immutable during evaluation.
 - Every schema and ruleset is versioned.
-- No persistence by default. SQLite is deferred.
+- No persistent public submissions. Demo mode is session-only.
+- SQLite is opt-in and local-only for developer and testing use.
 - No live integrations or credentials.
 
 ## Security and privacy
@@ -87,4 +93,4 @@ Decision output includes validation status, assessment and model versions, submi
 
 ## Deferred architecture
 
-Authentication, APIs, workflow orchestration, evidence storage, reassessment, monitoring, integrations, deployment, and multi-user persistence are not justified for the first vertical slice. Future runtime governance may include behavioral baselines, activity and tool-invocation monitoring, incident routing, stop mechanisms, and containment, but none is part of the v0.1 architecture.
+Authentication, APIs, workflow orchestration, evidence storage, automated reassessment, monitoring, integrations, and multi-user persistence remain deferred. Future runtime governance may include behavioral baselines, activity and tool-invocation monitoring, incident routing, stop mechanisms, and containment.

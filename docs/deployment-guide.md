@@ -21,6 +21,7 @@ Before creating an app, confirm:
 - the README, application disclaimers, license, references, and public claims have received a
   point-of-use review;
 - the downloaded JSON contains only the submitted synthetic case and documented provenance;
+- `CONTROL_PLANE_DATA_MODE` is unset or explicitly set to `demo`, never `local`;
 - the intended app URL and initial sharing state are recorded.
 
 ## Create an initial hosted review instance
@@ -53,6 +54,7 @@ commit in `requirements.txt`. The application then verifies the packaged artifac
 - Desktop and mobile layouts remain readable, including the longest control requirements and
   human-confirmation questions.
 - Refreshing the page does not preserve an earlier assessment result.
+- A new submission appears only in the current session and never creates a SQLite file.
 
 ## Publication decision
 
@@ -74,5 +76,6 @@ If a deployment is defective or unsuitable for public access:
 4. Repeat the complete hosted verification checklist before restoring public access.
 5. Delete the Community Cloud app if safe recovery cannot be established promptly.
 
-No rollback procedure should preserve or restore user-submitted information because the current
-demonstration has no intentional persistence.
+No rollback procedure should preserve or restore user-submitted information because public Demo
+Mode has no intentional persistence. SQLite is reserved for explicitly configured local developer
+and testing use.
