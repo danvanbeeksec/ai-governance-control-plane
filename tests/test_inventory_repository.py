@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from ai_governance_control_plane.inventory import (
-    SQLiteInventoryRepository, SessionInventoryRepository, find_potential_duplicates,
+    SQLiteInventoryRepository, SessionInventoryRepository, add_seed_history, find_potential_duplicates,
     load_seed_systems, repository_for_mode,
 )
 from ai_governance_control_plane.models import AssessmentHistoryRecord
@@ -65,3 +65,32 @@ def test_history_requires_known_parent(tmp_path):
     repository = SQLiteInventoryRepository(tmp_path / "history.db")
     with pytest.raises(ValueError, match="Unknown AI system"):
         repository.add_history(AssessmentHistoryRecord.model_construct(history_id="H-X", system_id="missing"))
+
+
+def test_seed_history_is_idempotent(root, tmp_path, framework_path):
+    from datetime import datetime, timezone
+    import yaml
+    from ai_governance_control_plane.framework_loader import load_framework
+    from ai_governance_control_plane.models import Assessment
+    from ai_governance_control_plane.workflow import run_assessment_workflow
+
+    repository = SQLiteInventoryRepository(tmp_path / "seed-history.db")
+    system = seeds(root)[0]
+    repository.save_system(system)
+    example = yaml.safe_load((root / "data" / "example-assessments.yaml").read_text())["assessments"][0]
+    example.pop("expected")
+    result = run_assessment_workflow(
+        Assessment.model_validate(example),
+        load_framework(framework_path, root / "data" / "framework-source.yaml"),
+        root / "data" / "risk-model.yaml",
+        root / "data" / "control-applicability-rules.yaml",
+    )
+    record = AssessmentHistoryRecord(
+        history_id="HIST-SEED-001", system_id=system.system_id,
+        assessment=result.assessment, decision=result.decision,
+        control_applicability=result.recommendations.model_dump(mode="json"),
+        created_at=datetime(2026, 8, 1, tzinfo=timezone.utc),
+    )
+    add_seed_history(repository, [record])
+    add_seed_history(repository, [record])
+    assert [item.history_id for item in repository.list_history(system.system_id)] == ["HIST-SEED-001"]

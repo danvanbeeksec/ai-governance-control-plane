@@ -1,7 +1,12 @@
 """AI Governance Control Plane prototype."""
 
 from .applicability import ControlRecommendationSet, RecommendationError, recommend_controls
-from .inventory import InventoryRepository, SessionInventoryRepository, SQLiteInventoryRepository
+from .inventory import (
+    InventoryRepository,
+    SessionInventoryRepository,
+    SQLiteInventoryRepository,
+    add_seed_history,
+)
 from .models import AISystem, Assessment, AssessmentHistoryRecord, DecisionRecord, OwnerRoles
 from .risk_engine import AssessmentError, evaluate_assessment, evaluate_assessment_record, load_model
 
@@ -17,6 +22,7 @@ __all__ = [
     "RecommendationError",
     "SessionInventoryRepository",
     "SQLiteInventoryRepository",
+    "add_seed_history",
     "evaluate_assessment",
     "evaluate_assessment_record",
     "load_model",

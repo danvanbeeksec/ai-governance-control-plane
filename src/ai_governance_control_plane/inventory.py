@@ -132,6 +132,16 @@ def load_seed_systems(path: str | Path) -> list[AISystem]:
     return [AISystem.model_validate(item) for item in json.loads(Path(path).read_text(encoding="utf-8"))["systems"]]
 
 
+def add_seed_history(
+    repository: InventoryRepository, records: Iterable[AssessmentHistoryRecord]
+) -> None:
+    """Add deterministic synthetic history once without replacing user-created history."""
+    for record in records:
+        existing_ids = {item.history_id for item in repository.list_history(record.system_id)}
+        if record.history_id not in existing_ids:
+            repository.add_history(record)
+
+
 def repository_for_mode(
     mode: str | None,
     seeds: Iterable[AISystem],

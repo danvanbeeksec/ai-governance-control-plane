@@ -1,5 +1,7 @@
 # AI Governance Control Plane
 
+**[Open the public Streamlit demonstration](https://ai-governance-control-plane.streamlit.app/)**
+
 The included Streamlit application, **AI System Risk & Control Assessor**, is an independent,
 synthetic prototype for recording proposed AI use cases, applying transparent classification and
 risk rules, and producing an executive-readable decision summary. It validates and consumes an
@@ -121,6 +123,10 @@ records expose a complete detail view and current risk tier. Running an assessme
 that can be revised or downloaded without changing inventory. Only **Submit to inventory** creates
 or updates an inventory record and appends assessment history; submission then clears the form and
 advances the assessment ID.
+
+Synthetic inventory examples are evaluated through the same deterministic risk and control
+workflow as user submissions. Their full records include synthetic assessment history, framework
+provenance, required controls, and controls requiring a human applicability decision.
 
 For local developer/testing persistence only, set `CONTROL_PLANE_DATA_MODE=local`. This enables a
 local SQLite database at `.local/control-plane.db` or the path in `CONTROL_PLANE_DATABASE`. Never
