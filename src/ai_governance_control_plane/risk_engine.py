@@ -20,8 +20,18 @@ class AssessmentError(ValueError):
 def load_model(path: str | Path) -> dict[str, Any]:
     """Load and validate a YAML risk model and its decision-affecting contracts."""
     model_path = Path(path)
-    with model_path.open(encoding="utf-8") as stream:
-        model = yaml.safe_load(stream)
+    try:
+        return load_model_bytes(model_path.read_bytes())
+    except OSError as exc:
+        raise AssessmentError(f"Risk model cannot be read: {exc}") from exc
+
+
+def load_model_bytes(content: bytes) -> dict[str, Any]:
+    """Load and validate a risk model from packaged or external bytes."""
+    try:
+        model = yaml.safe_load(content)
+    except yaml.YAMLError as exc:
+        raise AssessmentError(f"Risk model YAML is invalid: {exc}") from exc
     required = {
         "model", "enums", "required_inputs", "baseline_matrix", "elevation_rules", "explainability"
     }

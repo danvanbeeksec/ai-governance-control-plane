@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling>=1.26,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-governance-control-plane"
+version = "0.3.0"
+description = "Deterministic AI governance assessment and control applicability service"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Dan Van Beek" }]
+dependencies = [
+  "PyYAML>=6.0.3,<7",
+  "pydantic>=2.13.4,<3",
+  "ai-governance-control-framework @ git+https://github.com/danvanbeeksec/ai-governance-control-framework.git@78865d5fbe8d9fc83389b03bd34b44c27040d81a",
+]
+
+[project.urls]
+Repository = "https://github.com/danvanbeeksec/ai-governance-control-plane"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_governance_control_plane"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"data/risk-model.yaml" = "ai_governance_control_plane/resources/risk-model.yaml"
+"data/control-applicability-rules.yaml" = "ai_governance_control_plane/resources/control-applicability-rules.yaml"
+"data/framework-source.yaml" = "ai_governance_control_plane/resources/framework-source.yaml"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

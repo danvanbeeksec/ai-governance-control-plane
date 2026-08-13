@@ -108,17 +108,22 @@ class LoadedFramework(BaseModel):
 
 def load_manifest(path: str | Path) -> FrameworkManifest:
     try:
-        with Path(path).open(encoding="utf-8") as stream:
-            return FrameworkManifest.model_validate(yaml.safe_load(stream))
-    except (OSError, yaml.YAMLError, ValidationError) as exc:
+        return load_manifest_bytes(Path(path).read_bytes())
+    except OSError as exc:
         raise FrameworkIngestionError(f"Framework manifest is invalid: {exc}") from exc
 
 
-def load_framework_bytes(
-    artifact_bytes: bytes, manifest_path: str | Path
+def load_manifest_bytes(content: bytes) -> FrameworkManifest:
+    """Load a framework source manifest from packaged or external bytes."""
+    try:
+        return FrameworkManifest.model_validate(yaml.safe_load(content))
+    except (yaml.YAMLError, ValidationError) as exc:
+        raise FrameworkIngestionError(f"Framework manifest is invalid: {exc}") from exc
+
+
+def _load_verified_framework(
+    artifact_bytes: bytes, manifest: FrameworkManifest
 ) -> LoadedFramework:
-    """Verify and load framework bytes against the pinned external-source contract."""
-    manifest = load_manifest(manifest_path)
     actual_digest = hashlib.sha256(artifact_bytes).hexdigest()
     if not hmac.compare_digest(actual_digest, manifest.source.sha256):
         raise FrameworkIngestionError(
@@ -161,6 +166,20 @@ def load_framework_bytes(
         reference_catalog=document.reference_catalog,
         controls=document.controls,
     )
+
+
+def load_framework_bytes(
+    artifact_bytes: bytes, manifest_path: str | Path
+) -> LoadedFramework:
+    """Verify and load framework bytes against the pinned external-source contract."""
+    return _load_verified_framework(artifact_bytes, load_manifest(manifest_path))
+
+
+def load_framework_packaged_bytes(
+    artifact_bytes: bytes, manifest_bytes: bytes
+) -> LoadedFramework:
+    """Verify framework and manifest bytes supplied by installed packages."""
+    return _load_verified_framework(artifact_bytes, load_manifest_bytes(manifest_bytes))
 
 
 def load_framework(source_path: str | Path, manifest_path: str | Path) -> LoadedFramework:
