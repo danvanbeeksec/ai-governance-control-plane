@@ -12,7 +12,7 @@ from .intake import AssessmentRequirements, IntakeValidationResult, ProposedInfe
 from .risk_engine import AssessmentError, evaluate_assessment, evaluate_assessment_record, load_model
 from .service import DesignComparison, GovernanceDecisionService
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 __all__ = [
     "Assessment",

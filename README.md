@@ -22,6 +22,8 @@ This is a governance product demonstration. It shows how governance intent can b
 
 The [AI Governance Control Framework](https://github.com/danvanbeeksec/ai-governance-control-framework) remains the external, authoritative governance asset. The control plane validates the pinned framework artifact and recommends controls through approved fact-based applicability rules. It does not copy or modify control authority, infer implementation, or create tier-based control bundles.
 
+Agent Baseline v1.0-draft concepts are consumed only through the framework's existing common controls. Phase 1 continues to use the three inherent-risk tiers and the existing autonomous, conditionally autonomous, and human-supervised facts. No multidimensional agent assurance classifier has been added.
+
 The reusable `GovernanceDecisionService` is the application boundary for Streamlit, MCP, APIs, and future batch consumers. It exposes assessment, applicable-control retrieval, control explanation, and deterministic design-option comparison without importing UI concerns.
 
 The Control Plane is installable as a Python package. Its risk model, applicability methodology, and framework provenance manifest are included as read-only package resources. Installed consumers can use `GovernanceDecisionService.from_packaged_resources()` without a sibling Control Plane checkout.
