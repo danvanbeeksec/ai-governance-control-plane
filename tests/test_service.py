@@ -40,7 +40,7 @@ def test_service_constructs_from_packaged_resources(root):
     subject = GovernanceDecisionService.from_packaged_resources()
     result = subject.assess_ai_system(example(root))
     assert result.decision.framework_source.status == "loaded"
-    assert result.decision.framework_source.library_version == "1.1.0"
+    assert result.decision.framework_source.library_version == "1.2.0"
     assert result.recommendations.summary.total_controls == 70
 
 
