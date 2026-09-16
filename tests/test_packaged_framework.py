@@ -15,9 +15,9 @@ def test_packaged_framework_bytes_pass_the_control_plane_pin():
         controls_bytes(), ROOT / "data" / "framework-source.yaml"
     )
 
-    assert framework.source.commit == "8c95890cb2baf298e460a9a24978503286bc6e2f"
+    assert framework.source.commit == "26b810fad250fa785bbd470a32dba9e795933ed1"
     assert framework.source.library_version == "1.2.0"
     assert framework.source.digest == (
-        "sha256:dd7f696df558302808e71a0fab74153f815b86fa923335806a791146d78fdcc6"
+        "sha256:e01c880933b3385f6b8a490f867cd5d2627a97134eaad8fced2a15d4831eb510"
     )
     assert len(framework.controls) == 70
