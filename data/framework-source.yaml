@@ -1,6 +1,6 @@
 source:
   repository: danvanbeeksec/ai-governance-control-framework
-  commit: 26b810fad250fa785bbd470a32dba9e795933ed1
+  commit: 9f400a150396b79b1624660c111bcfd89a0d902c
   path: data/controls.yaml
   sha256: e01c880933b3385f6b8a490f867cd5d2627a97134eaad8fced2a15d4831eb510
 expected:

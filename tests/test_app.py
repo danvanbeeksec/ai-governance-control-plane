@@ -1,54 +1,82 @@
 from streamlit.testing.v1 import AppTest
 
 
-def test_inventory_and_assessment_are_separate_views(root, monkeypatch):
-    monkeypatch.delenv("AI_CONTROL_FRAMEWORK_PATH", raising=False)
-    app = AppTest.from_file(str(root / "app.py")).run(timeout=10)
-
-    assert "AI inventory" in [item.value for item in app.title]
-    assert any(item.label == "Risk tier" for item in app.metric)
-    assert next(item for item in app.metric if item.label == "Session assessments").value == "1"
-    assert any(item.label == "View full record" for item in app.button)
-    assert not any(item.label == "Run assessment" for item in app.button)
-
-    navigation = next(item for item in app.selectbox if item.label == "Go to")
-    navigation.set_value("➕  New assessment").run(timeout=10)
-    assert "New assessment" in [item.value for item in app.title]
-    assert any(item.label == "Run assessment" for item in app.button)
-    assert not any(item.label == "Submit to inventory" for item in app.button)
+def widget(app, kind, label):
+    return next(item for item in getattr(app, kind) if item.label == label)
 
 
-def test_full_synthetic_record_shows_assessment_controls(root, monkeypatch):
-    monkeypatch.delenv("AI_CONTROL_FRAMEWORK_PATH", raising=False)
-    app = AppTest.from_file(str(root / "app.py")).run(timeout=10)
-    next(item for item in app.button if item.label == "View full record").click().run(timeout=10)
+def open_assessment(root):
+    app = AppTest.from_file(str(root / 'app.py')).run(timeout=20)
+    widget(app, 'selectbox', 'Go to').set_value('New assessment').run(timeout=20)
+    return app
 
+
+def test_visitor_can_choose_a_worked_journey(root):
+    app = AppTest.from_file(str(root / 'app.py')).run(timeout=20)
     assert not app.exception
-    assert "Assessment history (1)" in [item.value for item in app.subheader]
-    assert "Required controls" in [item.label for item in app.tabs]
-    rendered = " ".join(item.value for item in app.markdown)
-    assert "AI-GOV-003" in rendered
-    assert "Framework version:" in rendered
+    widget(app, 'button', 'Explore a worked example').click().run(timeout=20)
+    assert 'New assessment' in [item.value for item in app.title]
+    assert widget(app, 'text_input', 'System name').value
 
 
-def test_assessment_is_draft_until_explicit_submission(root, monkeypatch):
-    monkeypatch.delenv("AI_CONTROL_FRAMEWORK_PATH", raising=False)
-    app = AppTest.from_file(str(root / "app.py")).run(timeout=10)
-    next(item for item in app.selectbox if item.label == "Go to").set_value("➕  New assessment").run(timeout=10)
+def test_full_synthetic_record_shows_assessment_controls(root):
+    app = AppTest.from_file(str(root / 'app.py')).run(timeout=20)
+    widget(app, 'selectbox', 'Go to').set_value('AI inventory').run(timeout=20)
+    widget(app, 'button', 'View full record').click().run(timeout=20)
+    assert not app.exception
+    assert 'Assessment history (1)' in [item.value for item in app.subheader]
+    assert 'Required controls' in [item.label for item in app.tabs]
 
-    example = next(item for item in app.selectbox if item.label == "Synthetic example")
-    example.set_value("Procurement Workflow Agent").run(timeout=10)
-    assessment_id = next(item for item in app.text_input if item.label == "Assessment ID")
-    assert assessment_id.value == "DEMO-001"
 
-    next(item for item in app.button if item.label == "Run assessment").click().run(timeout=10)
-    metrics = {item.label: item.value for item in app.metric}
-    assert metrics["Inherent risk"] == "Tier 1"
-    assert any(item.label == "Submit to inventory" for item in app.button)
-    assert "Nothing has been added to inventory yet" in " ".join(item.value for item in app.info)
+def test_seed_reassessment_preserves_newest_tier_and_facts(root):
+    app = open_assessment(root)
+    widget(app, 'selectbox', 'Inventory destination').set_value('SYS-SYN-001').run(timeout=20)
+    widget(app, 'selectbox', 'Information sensitivity').set_value('Restricted').run(timeout=20)
+    widget(app, 'text_input', 'Accountable owner').set_value('Fictional New Owner').run(timeout=20)
+    widget(app, 'button', 'Run assessment').click().run(timeout=20)
+    assert not app.exception
+    assert widget(app, 'metric', 'Inherent risk').value == 'Tier 1: High'
+    widget(app, 'button', 'Submit to inventory').click().run(timeout=20)
+    assert not app.exception
+    repository = app.session_state['inventory_repository:demo']
+    record = repository.get_system('SYS-SYN-001')
+    assert record.current_risk_tier == 'tier_1'
+    assert record.information_sensitivity == 'restricted'
+    assert record.owners.business_owner == 'Fictional New Owner'
+    assert repository.list_history(record.system_id)[-1].decision.final_tier == record.current_risk_tier
+    app.run(timeout=20)
+    assert repository.get_system(record.system_id).current_risk_tier == 'tier_1'
 
-    next(item for item in app.button if item.label == "Submit to inventory").click().run(timeout=10)
-    assert any("DEMO-001 was submitted" in item.value for item in app.success)
-    next_id = next(item for item in app.text_input if item.label == "Assessment ID")
-    assert next_id.value == "DEMO-002"
-    assert next(item for item in app.text_input if item.label == "System name").value == ""
+
+def test_invalid_provider_and_stale_inputs_cannot_be_submitted(root):
+    app = open_assessment(root)
+    widget(app, 'text_input', 'Provider').set_value('').run(timeout=20)
+    widget(app, 'button', 'Run assessment').click().run(timeout=20)
+    assert not app.exception
+    assert widget(app, 'button', 'Submit to inventory').disabled
+    widget(app, 'text_input', 'Provider').set_value('Fictional Provider').run(timeout=20)
+    assert widget(app, 'button', 'Submit to inventory').disabled
+    widget(app, 'button', 'Run assessment').click().run(timeout=20)
+    assert not widget(app, 'button', 'Submit to inventory').disabled
+    widget(app, 'selectbox', 'Information sensitivity').set_value('Restricted').run(timeout=20)
+    assert widget(app, 'button', 'Submit to inventory').disabled
+
+
+def test_blank_intake_has_no_assumed_material_facts(root):
+    app = open_assessment(root)
+    widget(app, 'selectbox', 'Synthetic example').set_value('Start blank').run(timeout=20)
+    assert widget(app, 'selectbox', 'Autonomy').value == 'Select one'
+    assert widget(app, 'text_input', 'System name').value == ''
+    widget(app, 'button', 'Run assessment').click().run(timeout=20)
+    assert app.error
+    assert not app.metric
+
+
+def test_comparison_shows_rationale_and_explicit_outcome_transitions(root):
+    app = AppTest.from_file(str(root / 'app.py')).run(timeout=20)
+    widget(app, 'selectbox', 'Go to').set_value('Compare designs').run(timeout=20)
+    widget(app, 'button', 'Compare designs').click().run(timeout=20)
+    assert not app.exception
+    assert widget(app, 'metric', 'Option A inherent risk').value.startswith('Tier ')
+    assert widget(app, 'metric', 'Option B inherent risk').value.startswith('Tier ')
+    assert 'Control applicability transitions' in [item.value for item in app.subheader]

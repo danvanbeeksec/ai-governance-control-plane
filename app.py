@@ -36,6 +36,13 @@ from ai_governance_control_plane.models import (  # noqa: E402
     OwnerRoles,
 )
 from ai_governance_control_plane.workflow import run_assessment_workflow  # noqa: E402
+from ai_governance_control_plane.service import GovernanceDecisionService
+from ai_governance_control_plane.submission import InventoryDetails, prepare_submission
+from ai_governance_control_plane.reporting import review_brief
+from ai_governance_control_plane.summarize import tier_display
+from ai_governance_control_plane.risk_engine import load_model
+from ai_governance_control_plane.applicability_contract import load_applicability_methodology
+from pydantic import ValidationError
 
 try:  # The pinned dependency is installed in deployed and clean-install environments.
     from ai_governance_control_framework import controls_bytes as packaged_controls_bytes
@@ -137,7 +144,7 @@ FIELD_CHOICE_DEFINITIONS = {
 
 
 def label(value: str) -> str:
-    return LABELS.get(value, value.replace("_", " ").title())
+    return tier_display(value) if value in {"tier_1", "tier_2", "tier_3"} else LABELS.get(value, value.replace("_", " ").title())
 
 
 def definition_for(field: str, value: str) -> str:
@@ -175,7 +182,7 @@ def seed_assessment_history(inventory, framework: LoadedFramework | None) -> Non
     records = []
     for system_id, assessment_id in assessment_by_system.items():
         system = inventory.get_system(system_id)
-        if system is None:
+        if system is None or inventory.list_history(system_id):
             continue
         result = run_assessment_workflow(
             Assessment.model_validate(examples[assessment_id]),
@@ -202,7 +209,7 @@ def local_framework_path() -> Path | None:
     configured = os.environ.get("AI_CONTROL_FRAMEWORK_PATH")
     candidates = [
         Path(configured).expanduser() if configured else None,
-        ROOT.parent / "ai-governance-control-framework" / "data" / "controls.yaml",
+        ROOT.parent / "ai-governance-control-framework" / "data" / "controls.yaml" if packaged_controls_bytes is None else None,
     ]
     return next((path for path in candidates if path and path.is_file()), None)
 
@@ -227,16 +234,17 @@ def select_value(
     example: dict[str, Any],
     example_key: str,
 ):
-    default = example.get(field, values[0])
-    index = values.index(default) if default in values else 0
-    display_values = [label(value) for value in values]
+    default = example.get(field)
+    index = values.index(default) + 1 if default in values else 0
+    display_values = ["Select one"] + [label(value) for value in values]
     selected = st.selectbox(
         prompt,
         display_values,
         index=index,
         key=f"{example_key}:{field}",
+        help=FIELD_HELP[field],
     )
-    return values[display_values.index(selected)]
+    return values[display_values.index(selected) - 1] if selected != "Select one" else None
 
 
 def render_characteristic_reference() -> None:
@@ -312,24 +320,15 @@ def render_assessment_result(result) -> None:
         for explanation in result.decision.explanation:
             st.write(f"• {explanation}")
     st.header("4. Review control applicability")
-    render_control_group(
-        "Required system controls",
-        "Controls established as applicable from the submitted facts.",
-        result.recommendations.applicable_system_controls,
-        "No system controls were established as applicable.",
-    )
-    render_control_group(
-        "Controls requiring an applicability decision",
-        "These controls require additional facts and human confirmation.",
-        result.recommendations.undetermined_system_controls,
-        "No controls require further applicability information.",
-    )
-    render_control_group(
-        "Enterprise dependencies",
-        "Organization-wide capabilities expected for the assessed system.",
-        result.recommendations.enterprise_dependencies,
-        "No enterprise dependencies were returned.",
-    )
+    tabs = st.tabs(["Required system controls", "Needs an applicability decision", "Enterprise dependencies"])
+    groups = [
+        ("Required system controls", "Controls established as applicable from submitted facts.", result.recommendations.applicable_system_controls),
+        ("Controls requiring an applicability decision", "Additional facts and human confirmation are required.", result.recommendations.undetermined_system_controls),
+        ("Enterprise dependencies", "Confirm inheritance scope, configuration, and supporting evidence.", result.recommendations.enterprise_dependencies),
+    ]
+    for tab, (title, guidance, items) in zip(tabs, groups):
+        with tab:
+            render_control_group(title, guidance, items, "No controls in this group.")
 
 
 def render_record_detail(system: AISystem, inventory) -> None:
@@ -426,184 +425,286 @@ def render_record_detail(system: AISystem, inventory) -> None:
     )
 
 
-st.set_page_config(page_title="AI Governance Control Plane", page_icon="🧭", layout="wide")
-data_mode, inventory = inventory_repository()
-with st.sidebar:
-    st.title("Control Plane")
-    page_choice = st.selectbox("Go to", ["📋  AI inventory", "➕  New assessment"])
-    page = "AI inventory" if page_choice == "📋  AI inventory" else "New assessment"
-    st.divider()
-    framework = load_verified_framework()
-    if framework:
-        st.success(f"Framework {framework.source.library_version} verified")
-    else:
-        st.warning("The verified framework dependency is unavailable.")
-    with st.expander("Understanding risk tiers"):
-        st.markdown("**Tier 1: High.** Enhanced multidisciplinary review and approval.")
-        st.markdown("**Tier 2: Moderate.** Targeted specialist review and proportionate approval.")
-        st.markdown("**Tier 3: Lower.** Standard governance review and proportionate testing.")
-        st.caption(
-            "The tier describes inherent risk before controls. It is not an approval, "
-            "compliance determination, or residual-risk rating."
-        )
-    render_characteristic_reference()
-    with st.expander("About this demonstration"):
-        st.write(
-            "This synthetic prototype demonstrates transparent risk classification and control "
-            "applicability. It does not authorize production use or determine compliance."
-        )
-        st.markdown("[Control plane repository](https://github.com/danvanbeeksec/ai-governance-control-plane)")
-        st.markdown("[Authoritative control framework](https://github.com/danvanbeeksec/ai-governance-control-framework)")
+def decision_service(framework):
+    return GovernanceDecisionService(framework, load_model(RISK_MODEL), load_applicability_methodology(METHODOLOGY))
 
-seed_assessment_history(inventory, framework)
 
-if data_mode == "demo":
-    st.info("Demo Mode: new inventory records exist only in this browser session and are not retained.")
-else:
-    st.warning("Local developer mode: records are retained in the configured SQLite database.")
+def render_characteristics(service, example, key):
+    requirements = {item.field: item for item in service.get_assessment_requirements().fields}
+    groups = [
+        [('Autonomy', 'autonomy_level'), ('Information sensitivity', 'information_sensitivity'), ('Human review', 'human_review')],
+        [('Action authority', 'action_authority'), ('System access', 'system_access'), ('External reach', 'external_reach')],
+        [('Reversibility', 'reversibility'), ('Decision impact', 'decision_impact')],
+    ]
+    facts = {}
+    for column, group in zip(st.columns(3), groups):
+        with column:
+            for prompt, field in group:
+                facts[field] = select_value(prompt, field, requirements[field].allowed_values, example, key)
+    options = requirements['agent_capabilities'].allowed_values
+    facts['agent_capabilities'] = st.multiselect(
+        'Agent capabilities', options, default=example.get('agent_capabilities', []),
+        format_func=label, key=f'{key}:agent_capabilities', help=FIELD_HELP['agent_capabilities'])
+    return facts
 
-if page == "AI inventory":
-    detail_id = st.session_state.get("detail_system_id")
+
+def render_start():
+    st.title('From AI use case to a reviewable governance decision')
+    st.write('Explore how system facts lead to an explainable inherent-risk tier, practical controls, and questions for human review.')
+    st.caption('Independent governance product demonstration. All examples and records are fictional.')
+    for title, description, target in [
+        ('Explore a worked example', 'Follow a public research assistant from intake through its rationale and control requirements.', 'New assessment'),
+        ('Assess a fictional design', 'Start with blank facts. Confirm the characteristics that determine the decision.', 'New assessment'),
+        ('Compare two designs', 'See how different autonomy, permissions, or data change the rules and control applicability.', 'Compare designs'),
+    ]:
+        with st.container(border=True):
+            st.subheader(title)
+            st.write(description)
+            if st.button(title, key=f'start:{title}'):
+                st.session_state['next_navigation'] = target
+                if title == 'Assess a fictional design':
+                    st.session_state['start_choice'] = 'Start blank'
+                elif title == 'Explore a worked example':
+                    st.session_state['start_choice'] = load_examples()[0]['system_name']
+                st.rerun()
+    st.markdown('[Read the walkthrough](https://github.com/danvanbeeksec/ai-governance-control-plane/blob/main/docs/demo-walkthrough.md) · [Explore the control library](https://github.com/danvanbeeksec/ai-governance-control-framework)')
+    st.write('The Framework owns control requirements. The Control Plane applies visible rules. The Assistant and Copilot kit provide alternative interfaces. A qualified human owns the final governance decision.')
+
+
+def render_inventory(inventory):
+    detail_id = st.session_state.get('detail_system_id')
     detail_system = inventory.get_system(detail_id) if detail_id else None
     if detail_system:
         render_record_detail(detail_system, inventory)
-    else:
-        st.title("AI inventory")
-        st.caption("Review governed systems, current risk tiers, lifecycle states, and ownership.")
-        systems = inventory.list_systems()
-        st.dataframe(
-            [{
-                "System ID": item.system_id,
-                "System": item.name,
-                "Risk tier": label(item.current_risk_tier) if item.current_risk_tier else "Not assessed",
-                "Lifecycle": label(item.lifecycle_state),
-                "Autonomy": label(item.autonomy_level),
-                "Sensitivity": label(item.information_sensitivity),
-                "Provider": item.provider,
-            } for item in systems],
-            use_container_width=True,
-            hide_index=True,
-        )
-        selected_system_name = st.selectbox("Select an inventory record", [item.name for item in systems])
-        selected_system = next(item for item in systems if item.name == selected_system_name)
-        risk, lifecycle, assessments = st.columns(3)
-        risk.metric("Risk tier", label(selected_system.current_risk_tier) if selected_system.current_risk_tier else "Not assessed")
-        lifecycle.metric("Lifecycle", label(selected_system.lifecycle_state))
-        assessments.metric("Session assessments", len(inventory.list_history(selected_system.system_id)))
-        st.write(selected_system.purpose)
-        if st.button("View full record", type="primary"):
-            st.session_state["detail_system_id"] = selected_system.system_id
-            st.rerun()
-else:
-    st.title("New assessment")
-    st.caption("Run and revise an assessment before deciding whether to submit it to inventory.")
-    st.warning("Use fictional or synthetic information only.")
-    examples = [item for item in load_examples() if item.get("information_sensitivity")]
-    st.subheader("Choose how to begin")
-    st.write(
-        "Describe your own fictional AI use case in the form below, or load a synthetic example "
-        "to explore how the assessment and control recommendations work."
-    )
-    selected_name = st.selectbox(
-        "Synthetic example",
-        [item["system_name"] for item in examples],
-        help="Selecting an example prepopulates the form. You can change any field before running the assessment.",
-    )
-    example = next(item for item in examples if item["system_name"] == selected_name)
-    if st.session_state.get("last_selected_example") != selected_name:
-        st.session_state["blank_assessment_form"] = False
-        st.session_state["last_selected_example"] = selected_name
-    blank_form = st.session_state.get("blank_assessment_form", False)
-    sequence = st.session_state.setdefault("assessment_sequence", 1)
-    form_generation = st.session_state.setdefault("form_generation", 1)
-    form_key = f"assessment:{selected_name}:{form_generation}"
-    with st.form(form_key):
-        st.header("1. Describe the proposed AI use")
+        return
+    st.title('AI inventory')
+    st.caption('Review fictional systems, their current assessed facts, and immutable decision history.')
+    search = st.text_input('Search systems', help='Search by system name, ID, owner, or provider.')
+    risk_filter = st.selectbox('Risk filter', ['All tiers', 'tier_1', 'tier_2', 'tier_3'], format_func=label)
+    lifecycle_filter = st.selectbox('Lifecycle filter', ['All states', 'proposed', 'assessing', 'approved', 'active', 'suspended', 'retired'], format_func=label)
+    systems = [item for item in inventory.list_systems()
+               if (risk_filter == 'All tiers' or item.current_risk_tier == risk_filter)
+               and (lifecycle_filter == 'All states' or item.lifecycle_state == lifecycle_filter)
+               and search.casefold() in f'{item.system_id} {item.name} {item.provider} {item.owners.business_owner}'.casefold()]
+    if not systems:
+        st.info('No records match these filters.')
+        return
+    st.dataframe([{'System ID': item.system_id, 'System': item.name,
+                   'Risk tier': label(item.current_risk_tier) if item.current_risk_tier else 'Not assessed',
+                   'Lifecycle': label(item.lifecycle_state), 'Autonomy': label(item.autonomy_level),
+                   'Sensitivity': label(item.information_sensitivity), 'Provider': item.provider} for item in systems],
+                 width='stretch', hide_index=True)
+    by_id = {item.system_id: item for item in systems}
+    selected_id = st.selectbox('Select an inventory record', list(by_id), format_func=lambda value: f'{by_id[value].name} ({value})')
+    selected = by_id[selected_id]
+    risk, lifecycle, assessments = st.columns(3)
+    risk.metric('Risk tier', label(selected.current_risk_tier) if selected.current_risk_tier else 'Not assessed')
+    lifecycle.metric('Lifecycle', label(selected.lifecycle_state))
+    assessments.metric('Session assessments', len(inventory.list_history(selected_id)))
+    st.write(selected.purpose)
+    if st.button('View full record', type='primary'):
+        st.session_state['detail_system_id'] = selected_id
+        st.rerun()
+    if st.button('Reassess selected system'):
+        st.session_state['reassess_target'] = selected_id
+        st.session_state['next_navigation'] = 'New assessment'
+        st.rerun()
+
+
+def render_new_assessment(service, inventory, data_mode):
+    st.title('New assessment')
+    st.caption('Confirm the facts, review the draft, then choose whether to update inventory.')
+    examples = [item for item in load_examples() if item.get('information_sensitivity')]
+    choices = ['Start blank'] + [item['system_name'] for item in examples]
+    if 'start_choice' in st.session_state:
+        st.session_state['synthetic_example'] = st.session_state.pop('start_choice')
+    selected_name = st.selectbox('Synthetic example', choices, index=1, key='synthetic_example',
+                                help='Choose blank intake or load a worked fictional example.')
+    example = next((item for item in examples if item['system_name'] == selected_name), {})
+    targets = {item.system_id: item for item in inventory.list_systems()}
+    requested = st.session_state.pop('reassess_target', None)
+    if requested in targets:
+        st.session_state['inventory_destination'] = requested
+    if st.session_state.pop('reset_destination', False):
+        st.session_state['inventory_destination'] = None
+    selected_id = st.selectbox('Inventory destination', [None] + list(targets),
+                              key='inventory_destination',
+                              format_func=lambda value: 'Create a new system' if value is None else f'Update {targets[value].name} ({value})',
+                              help='Choose an existing system explicitly. Matching names are never merged automatically.')
+    sequence = st.session_state.setdefault('assessment_sequence', 1)
+    generation = st.session_state.setdefault('form_generation', 1)
+    key = f'assessment:{selected_name}:{selected_id}:{generation}'
+    existing = targets.get(selected_id)
+    if existing:
+        history = inventory.list_history(selected_id)
+        if history:
+            example = history[-1].assessment.model_dump(mode='json')
+        else:
+            example = {**example, 'system_name': existing.name, 'business_purpose': existing.purpose,
+                       'accountable_owner': existing.owners.business_owner, 'autonomy_level': existing.autonomy_level,
+                       'information_sensitivity': existing.information_sensitivity}
+    with st.container(border=True):
+        st.subheader('1. Describe the proposed AI use')
         left, right = st.columns(2)
         with left:
-            assessment_id = st.text_input("Assessment ID", value=f"DEMO-{sequence:03d}", max_chars=100)
-            system_name = st.text_input("System name", value="" if blank_form else example["system_name"], max_chars=200)
+            system_name = st.text_input('System name', value=example.get('system_name', ''), max_chars=200, key=f'{key}:name')
+            accountable_owner = st.text_input('Accountable owner', value=example.get('accountable_owner', ''), max_chars=200, key=f'{key}:owner')
         with right:
-            accountable_owner = st.text_input("Accountable owner", value="" if blank_form else example["accountable_owner"], max_chars=200)
-            provider = st.text_input("Provider", value="" if blank_form else "Synthetic provider", max_chars=200)
-            provider_model = st.text_input("Model", value="" if blank_form else "Synthetic model", max_chars=200)
-        business_purpose = st.text_area("Business purpose", value="" if blank_form else example["business_purpose"], max_chars=2000)
-        st.header("2. Record material characteristics")
-        first, second, third = st.columns(3)
-        with first:
-            autonomy_level = select_value("Autonomy", "autonomy_level", ["human_supervised", "conditionally_autonomous", "autonomous"], example, form_key)
-            information_sensitivity = select_value("Information sensitivity", "information_sensitivity", ["public", "internal", "confidential", "restricted"], example, form_key)
-            human_review = select_value("Human review", "human_review", ["prior_to_each_meaningful_action", "checkpoints_or_exceptions", "no_prior_review"], example, form_key)
-        with second:
-            action_authority = select_value("Action authority", "action_authority", ["generate_only", "recommend", "modify_nonproduction", "modify_production", "execute_material_transaction", "safety_relevant_action"], example, form_key)
-            system_access = select_value("System access", "system_access", ["none", "standard", "privileged"], example, form_key)
-            external_reach = select_value("External reach", "external_reach", ["none", "bounded", "broad"], example, form_key)
-        with third:
-            reversibility = select_value("Reversibility", "reversibility", ["easy", "recoverable_with_effort", "difficult"], example, form_key)
-            decision_impact = select_value("Decision impact", "decision_impact", ["none", "operational", "consequential", "regulated_or_consequential"], example, form_key)
-            capabilities = ["external_tools", "external_communication", "delegation", "persistent_memory"]
-            selected_capabilities = st.multiselect("Agent capabilities", [label(value) for value in capabilities], default=[label(value) for value in example["agent_capabilities"]])
-            agent_capabilities = [value for value in capabilities if label(value) in selected_capabilities]
-        run_draft = st.form_submit_button("Run assessment", type="primary", disabled=framework is None)
-    if run_draft and framework:
+            provider = st.text_input('Provider', value=existing.provider if existing else ('Synthetic provider' if example else ''), max_chars=200, key=f'{key}:provider')
+            provider_model = st.text_input('Model', value=(existing.model or '') if existing else '', max_chars=200, key=f'{key}:model')
+        business_purpose = st.text_area('Business purpose', value=example.get('business_purpose', ''), max_chars=2000, key=f'{key}:purpose')
+        st.subheader('2. Confirm material characteristics')
+        facts = render_characteristics(service, example, key)
+        facts.update(assessment_id=f'DEMO-{sequence:03d}', system_name=system_name,
+                     accountable_owner=accountable_owner, business_purpose=business_purpose)
+        details = None
         try:
-            assessment = Assessment(
-                assessment_id=assessment_id, system_name=system_name, business_purpose=business_purpose,
-                accountable_owner=accountable_owner, autonomy_level=autonomy_level,
-                information_sensitivity=information_sensitivity, human_review=human_review,
-                action_authority=action_authority, system_access=system_access,
-                external_reach=external_reach, reversibility=reversibility,
-                decision_impact=decision_impact, agent_capabilities=agent_capabilities,
-            )
-            result = run_assessment_workflow(assessment, framework, RISK_MODEL, METHODOLOGY)
-            st.session_state["draft_assessment"] = {
-                "result": result, "provider": provider, "model": provider_model,
-            }
-        except Exception:
-            st.error("Assessment could not be completed. Confirm the inputs and try again.")
-    draft = st.session_state.get("draft_assessment")
-    if draft:
-        result = draft["result"]
-        render_assessment_result(result)
-        st.info("This is a draft. Nothing has been added to inventory yet. Change the form and run it again as needed.")
-        submit, discard, download = st.columns(3)
-        if submit.button("Submit to inventory", type="primary"):
-            assessment = result.assessment
-            system = next((item for item in inventory.list_systems() if item.name.casefold() == assessment.system_name.casefold()), None)
-            if system is None:
-                system = AISystem(
-                    system_id=f"TEMP-{uuid4().hex[:12].upper()}", name=assessment.system_name,
-                    purpose=assessment.business_purpose, provider=draft["provider"], model=draft["model"] or None,
-                    owners=OwnerRoles(business_owner=assessment.accountable_owner), lifecycle_state="assessing",
-                    record_type="temporary_submission" if data_mode == "demo" else "managed_inventory",
-                    visibility="demo" if data_mode == "demo" else "private",
-                    autonomy_level=assessment.autonomy_level, information_sensitivity=assessment.information_sensitivity,
-                    current_risk_tier=result.decision.final_tier, vendor_status="vendor",
-                    metadata={"created_from": "assessment_interface"},
-                )
-                duplicates = find_potential_duplicates(system, inventory.list_systems())
-                if duplicates:
-                    st.warning("Potential duplicate detected: " + ", ".join(item.name for item in duplicates))
+            details = InventoryDetails(provider=provider, model=provider_model or None)
+        except ValidationError:
+            st.warning('Provider is required before this draft can be submitted to inventory.')
+        inputs = {'facts': facts, 'provider': provider, 'model': provider_model, 'system_id': selected_id}
+        if st.button('Run assessment', type='primary'):
+            st.session_state.pop('draft_assessment', None)
+            validation = service.validate_assessment_input(facts)
+            if validation.assessment:
+                st.session_state['draft_assessment'] = {'result': service.assess_ai_system(validation.assessment), 'inputs': inputs}
             else:
-                system = system.model_copy(update={"current_risk_tier": result.decision.final_tier})
-            inventory.save_system(system)
-            inventory.add_history(AssessmentHistoryRecord(
-                history_id=f"HIST-{uuid4().hex.upper()}", system_id=system.system_id,
-                assessment=result.assessment, decision=result.decision,
-                control_applicability=result.recommendations.model_dump(mode="json"),
-            ))
-            st.session_state["assessment_sequence"] = sequence + 1
-            st.session_state["form_generation"] = form_generation + 1
-            st.session_state["blank_assessment_form"] = True
-            st.session_state.pop("draft_assessment", None)
-            st.session_state["submission_notice"] = f"{assessment.assessment_id} was submitted to inventory."
+                for issue in validation.issues:
+                    st.error(f'{label(issue.field)}: {issue.detail or issue.question}')
+    draft = st.session_state.get('draft_assessment')
+    if draft:
+        result = draft['result']
+        stale = inputs != draft['inputs']
+        if stale:
+            st.warning('The inputs have changed. Run the assessment again before submitting or downloading this draft.')
+        render_assessment_result(result)
+        with st.expander('Facts used for this decision'):
+            st.json(result.assessment.model_dump(mode='json'))
+        submission = prepare_submission(result, details, inventory, system_id=selected_id, demo=data_mode == 'demo') if details and not stale else None
+        if submission:
+            with st.expander('Review proposed inventory changes', expanded=selected_id is not None):
+                st.dataframe([{'Field': label(item['field']), 'Before': json.dumps(item['before']), 'After': json.dumps(item['after'])}
+                              for item in submission.changes], hide_index=True, width='stretch')
+            duplicates = find_potential_duplicates(submission.system, inventory.list_systems()) if selected_id is None else []
+            if duplicates:
+                st.info('Similar records exist: ' + ', '.join(item.name for item in duplicates) + '. Select an existing inventory destination if you mean to reassess it.')
+        st.info('This is a draft. Nothing has been added to inventory yet.')
+        if st.button('Submit to inventory', type='primary', disabled=submission is None):
+            try:
+                inventory.save_assessment(submission.system, submission.history)
+            except (ValueError, OSError) as exc:
+                st.error(f'The record could not be saved: {exc}')
+            else:
+                st.session_state['assessment_sequence'] = sequence + 1
+                st.session_state['form_generation'] = generation + 1
+                st.session_state['start_choice'] = 'Start blank'
+                st.session_state['reset_destination'] = True
+                st.session_state.pop('draft_assessment', None)
+                st.session_state['submission_notice'] = f'{result.assessment.assessment_id} was submitted to inventory.'
+                st.rerun()
+        if st.button('Discard draft'):
+            st.session_state.pop('draft_assessment', None)
             st.rerun()
-        if discard.button("Discard draft"):
-            st.session_state.pop("draft_assessment", None)
-            st.rerun()
-        download.download_button(
-            "Download draft", data=json.dumps(result.model_dump(mode="json"), indent=2),
-            file_name=f"{result.assessment.assessment_id}-assessment.json", mime="application/json",
-        )
-    if notice := st.session_state.pop("submission_notice", None):
+        st.download_button('Download review brief', review_brief(result),
+                           file_name=f'{result.assessment.assessment_id}-review.md', mime='text/markdown', disabled=stale)
+        st.download_button('Download draft JSON', json.dumps(result.model_dump(mode='json'), indent=2),
+                           file_name=f'{result.assessment.assessment_id}-assessment.json', mime='application/json', disabled=stale)
+    if notice := st.session_state.pop('submission_notice', None):
         st.success(notice)
+    with st.expander('Assessment identifiers and provenance'):
+        st.caption(f'Next managed assessment ID: DEMO-{sequence:03d}')
+        st.json(service.framework.source.model_dump(mode='json'))
+
+
+def render_comparison(service):
+    st.title('Compare AI designs')
+    st.write('Compare two complete fictional designs. A lower inherent-risk result is not approval, and a control moving to undetermined still requires human review.')
+    examples = [item for item in load_examples() if item.get('information_sensitivity')]
+    by_name = {item['system_name']: item for item in examples}
+    facts = []
+    for index, column in enumerate(st.columns(2)):
+        with column:
+            heading = 'Option A' if index == 0 else 'Option B'
+            st.subheader(heading)
+            name = st.selectbox(f'{heading} example', list(by_name), index=0 if index == 0 else min(5, len(examples)-1))
+            original = by_name[name]
+            st.write(original['business_purpose'])
+            with st.expander(f'Edit {heading} characteristics'):
+                changes = render_characteristics(service, original, f'comparison:{index}:{name}')
+            facts.append({**original, **changes, 'assessment_id': f'COMPARE-{index+1}'})
+    if st.button('Compare designs', type='primary'):
+        st.session_state.pop('design_comparison', None)
+        validations = [service.validate_assessment_input(item) for item in facts]
+        if all(item.assessment is not None for item in validations):
+            st.session_state['design_comparison'] = {'inputs': facts, 'result': service.compare_ai_design_options(*facts)}
+        else:
+            st.error('Complete every characteristic in both designs before comparison.')
+    stored = st.session_state.get('design_comparison')
+    if not stored:
+        return
+    if stored['inputs'] != facts:
+        st.info('Design inputs changed. Compare again to refresh the result.')
+        return
+    comparison = stored['result']
+    a, b = st.columns(2)
+    a.metric('Option A inherent risk', label(comparison.option_a.decision.final_tier))
+    b.metric('Option B inherent risk', label(comparison.option_b.decision.final_tier))
+    st.subheader('What changed')
+    st.dataframe([{'Fact': label(item['field']), 'Option A': display_fact_value(item['option_a']), 'Option B': display_fact_value(item['option_b'])}
+                  for item in comparison.changed_facts], width='stretch', hide_index=True)
+    st.write('Newly matched risk rules: ' + (', '.join(comparison.rules_added) or 'None'))
+    st.write('Rules no longer matched: ' + (', '.join(comparison.rules_removed) or 'None'))
+    st.subheader('Control applicability transitions')
+    if comparison.control_transitions:
+        st.dataframe(comparison.control_transitions, width='stretch', hide_index=True)
+    else:
+        st.info('No control applicability outcomes changed.')
+    st.caption('Undetermined means further facts or qualified human judgment are needed. It does not mean not applicable.')
+    for heading, result in [('Option A rationale', comparison.option_a), ('Option B rationale', comparison.option_b)]:
+        with st.expander(heading):
+            st.write(result.decision.executive_summary)
+            for reason in result.decision.explanation:
+                st.write(reason)
+    st.download_button('Download comparison JSON', comparison.model_dump_json(indent=2), 'design-comparison.json', 'application/json')
+    st.download_button('Download comparison brief', review_brief(comparison.option_a) + '\n---\n\n' + review_brief(comparison.option_b), 'design-comparison.md', 'text/markdown')
+
+
+st.set_page_config(page_title='AI Governance Control Plane', page_icon='🧭', layout='wide')
+data_mode, inventory = inventory_repository()
+if 'next_navigation' in st.session_state:
+    st.session_state['navigation'] = st.session_state.pop('next_navigation')
+with st.sidebar:
+    st.title('Control Plane')
+    page = st.selectbox('Go to', ['Start here', 'AI inventory', 'New assessment', 'Compare designs'], key='navigation')
+    st.divider()
+    framework = load_verified_framework()
+    if framework:
+        st.success(f'Framework {framework.source.library_version} verified')
+    else:
+        st.warning('The verified framework dependency is unavailable.')
+    with st.expander('Understanding risk tiers'):
+        st.write('Tier 1: High. Enhanced multidisciplinary review.')
+        st.write('Tier 2: Moderate. Targeted specialist review.')
+        st.write('Tier 3: Lower. Standard governance review and testing.')
+        st.caption('Inherent risk before controls. Every result requires human review.')
+    render_characteristic_reference()
+    with st.expander('About this demonstration'):
+        st.write('A synthetic prototype showing transparent risk classification and control applicability.')
+        st.markdown('[Source and walkthrough](https://github.com/danvanbeeksec/ai-governance-control-plane)')
+        st.markdown('[Control authority](https://github.com/danvanbeeksec/ai-governance-control-framework)')
+seed_assessment_history(inventory, framework)
+if data_mode == 'demo':
+    st.info('Demo Mode: use fictional information. New records exist only in this browser session and are not retained.')
+else:
+    st.warning('Local developer mode: records are retained in the configured SQLite database.')
+if page == 'Start here':
+    render_start()
+elif page == 'AI inventory':
+    render_inventory(inventory)
+elif framework is None:
+    st.error('Assessment is unavailable until the framework dependency is repaired. You can still explore the walkthrough and fictional inventory.')
+    st.markdown('[Read the walkthrough](https://github.com/danvanbeeksec/ai-governance-control-plane/blob/main/docs/demo-walkthrough.md)')
+elif page == 'New assessment':
+    render_new_assessment(decision_service(framework), inventory, data_mode)
+else:
+    render_comparison(decision_service(framework))

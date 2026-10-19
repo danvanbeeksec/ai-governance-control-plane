@@ -31,6 +31,11 @@ class InventoryRepository(ABC):
     @abstractmethod
     def list_history(self, system_id: str) -> list[AssessmentHistoryRecord]: ...
 
+    @abstractmethod
+    def save_assessment(self, system: AISystem, record: AssessmentHistoryRecord) -> None:
+        """Atomically save current system state and its new immutable history event."""
+        ...
+
 
 class SessionInventoryRepository(InventoryRepository):
     """Process/session-only repository. It never opens a database or writes files."""
@@ -55,6 +60,14 @@ class SessionInventoryRepository(InventoryRepository):
     def list_history(self, system_id: str) -> list[AssessmentHistoryRecord]:
         return [item.model_copy(deep=True) for item in self._history.get(system_id, [])]
 
+    def save_assessment(self, system: AISystem, record: AssessmentHistoryRecord) -> None:
+        _validate_submission(system, record)
+        if any(record.history_id == old.history_id for history in self._history.values() for old in history):
+            raise ValueError("Duplicate assessment history ID")
+        saved_system, saved_record = system.model_copy(deep=True), record.model_copy(deep=True)
+        self._systems[system.system_id] = saved_system
+        self._history.setdefault(system.system_id, []).append(saved_record)
+
 
 class SQLiteInventoryRepository(InventoryRepository):
     """Local developer/testing persistence. Not suitable for a public anonymous demo."""
@@ -67,6 +80,7 @@ class SQLiteInventoryRepository(InventoryRepository):
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.database_path)
         connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA foreign_keys = ON")
         return connection
 
     def _initialize(self) -> None:
@@ -126,6 +140,29 @@ class SQLiteInventoryRepository(InventoryRepository):
                 "SELECT payload FROM assessment_history WHERE system_id = ? ORDER BY created_at", (system_id,)
             ).fetchall()
         return [AssessmentHistoryRecord.model_validate_json(row["payload"]) for row in rows]
+
+    def save_assessment(self, system: AISystem, record: AssessmentHistoryRecord) -> None:
+        _validate_submission(system, record)
+        with self._connect() as connection:
+            connection.execute(
+                """INSERT INTO ai_systems(system_id, payload, created_at, updated_at)
+                   VALUES (?, ?, ?, ?) ON CONFLICT(system_id) DO UPDATE SET
+                   payload=excluded.payload, updated_at=excluded.updated_at""",
+                (system.system_id, system.model_dump_json(), system.created_at.isoformat(), system.updated_at.isoformat()),
+            )
+            connection.execute(
+                "INSERT INTO assessment_history(history_id, system_id, payload, created_at) VALUES (?, ?, ?, ?)",
+                (record.history_id, record.system_id, record.model_dump_json(), record.created_at.isoformat()),
+            )
+
+
+def _validate_submission(system: AISystem, record: AssessmentHistoryRecord) -> None:
+    if record.system_id != system.system_id:
+        raise ValueError("History and system identifiers do not match")
+    if system.current_risk_tier != record.decision.final_tier:
+        raise ValueError("Current tier does not match the submitted decision")
+    if record.assessment.model_dump(mode="json") != record.decision.submitted_facts:
+        raise ValueError("History facts do not match the submitted decision")
 
 
 def load_seed_systems(path: str | Path) -> list[AISystem]:

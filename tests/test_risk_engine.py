@@ -220,3 +220,24 @@ def test_model_loader_rejects_enum_contract_drift(tmp_path):
     path.write_text(yaml.safe_dump(altered), encoding="utf-8")
     with pytest.raises(AssessmentError, match="does not match the typed assessment contract"):
         load_model(path)
+
+
+@pytest.mark.parametrize('change', ['tier_order', 'unknown_value', 'wrong_operator_type', 'empty_condition', 'missing_input', 'missing_enum'])
+def test_invalid_policy_contract_fails_before_assessment(tmp_path, change):
+    altered = deepcopy(MODEL)
+    if change == 'tier_order':
+        altered['model']['tier_order'].reverse()
+    elif change == 'unknown_value':
+        altered['elevation_rules'][0]['when']['human_review'] = {'in': ['magical_review']}
+    elif change == 'wrong_operator_type':
+        altered['elevation_rules'][0]['when']['human_review'] = {'in': 'no_prior_review'}
+    elif change == 'empty_condition':
+        altered['elevation_rules'][0]['when'] = {}
+    elif change == 'missing_input':
+        altered['required_inputs'].remove('system_name')
+    else:
+        del altered['enums']['external_reach']
+    path = tmp_path / 'invalid.yaml'
+    path.write_text(yaml.safe_dump(altered))
+    with pytest.raises(AssessmentError):
+        load_model(path)
