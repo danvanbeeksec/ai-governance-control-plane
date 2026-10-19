@@ -50,3 +50,15 @@ def test_service_exposes_guided_intake(root, framework_path):
     result = subject.validate_assessment_input({"assessment_id": "partial"})
     assert requirements.fields
     assert result.status == "needs_information"
+
+
+def test_comparison_explains_state_transitions_without_inventing_non_applicability(root, framework_path):
+    subject = make_service(root, framework_path)
+    left = example(root)
+    right = left.model_copy(update={'information_sensitivity': 'restricted', 'autonomy_level': 'autonomous'})
+    compared = subject.compare_ai_design_options(left, right)
+    assert {item['field'] for item in compared.changed_facts} == {'information_sensitivity', 'autonomy_level'}
+    assert compared.rules_added
+    assert compared.control_transitions
+    assert all(item['option_a'] in {'applicable', 'undetermined', 'inherited_dependency'}
+               and item['option_b'] in {'applicable', 'undetermined', 'inherited_dependency'} for item in compared.control_transitions)

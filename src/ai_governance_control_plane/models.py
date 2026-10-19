@@ -91,13 +91,13 @@ class AssessmentHistoryRecord(BaseModel):
 class Assessment(BaseModel):
     """Canonical executable assessment input."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", strict=True)
 
     schema_version: Literal["0.1.0"] = "0.1.0"
-    assessment_id: str = Field(min_length=1, max_length=100)
-    system_name: str = Field(min_length=1, max_length=200)
-    business_purpose: str = Field(min_length=1, max_length=2000)
-    accountable_owner: str = Field(min_length=1, max_length=200)
+    assessment_id: str = Field(min_length=1, max_length=100, pattern=r"\S")
+    system_name: str = Field(min_length=1, max_length=200, pattern=r"\S")
+    business_purpose: str = Field(min_length=1, max_length=2000, pattern=r"\S")
+    accountable_owner: str = Field(min_length=1, max_length=200, pattern=r"\S")
     autonomy_level: AutonomyLevel
     information_sensitivity: InformationSensitivity
     human_review: HumanReview
@@ -106,7 +106,7 @@ class Assessment(BaseModel):
     external_reach: ExternalReach
     reversibility: Reversibility
     decision_impact: DecisionImpact
-    agent_capabilities: list[AgentCapability]
+    agent_capabilities: list[AgentCapability] = Field(json_schema_extra={"uniqueItems": True})
 
     @field_validator("agent_capabilities")
     @classmethod

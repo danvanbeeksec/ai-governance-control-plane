@@ -35,6 +35,7 @@ class AssessmentFieldRequirement(BaseModel):
     question: str
     allowed_values: list[str] = Field(default_factory=list)
     accepts_multiple: bool = False
+    constraints: dict[str, Any] = Field(default_factory=dict)
 
 
 class AssessmentRequirements(BaseModel):
@@ -43,6 +44,7 @@ class AssessmentRequirements(BaseModel):
     fields: list[AssessmentFieldRequirement]
     managed_fields: list[str]
     inference_policy: str
+    input_schema: dict[str, Any]
 
 
 class ProposedInference(BaseModel):
@@ -85,12 +87,14 @@ def assessment_requirements() -> AssessmentRequirements:
                 question=QUESTIONS[name],
                 allowed_values=list(values),
                 accepts_multiple=definition.get("type") == "array",
+                constraints={key: value for key, value in definition.items() if key != "title"},
             )
         )
     return AssessmentRequirements(
         schema_version="0.1.0",
         fields=fields,
         managed_fields=list(MANAGED_FIELDS),
+        input_schema=schema,
         inference_policy=(
             "The service never infers facts. A client may propose an inference with its basis, "
             "but the value is excluded until confirmed is true."
@@ -136,7 +140,8 @@ def validate_assessment_input(
         if field not in Assessment.model_fields:
             continue
         try:
-            TypeAdapter(Assessment.model_fields[field].annotation).validate_python(value)
+            definition = Assessment.model_fields[field]
+            TypeAdapter(definition.rebuild_annotation()).validate_python(value, strict=True)
         except ValidationError as exc:
             issues.append(
                 IntakeIssue(

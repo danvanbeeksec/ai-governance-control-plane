@@ -38,7 +38,10 @@ def load_model_bytes(content: bytes) -> dict[str, Any]:
     if not isinstance(model, dict) or not required.issubset(model):
         missing = sorted(required - set(model or {}))
         raise AssessmentError(f"Risk model is missing required sections: {missing}")
-    _validate_model(model)
+    try:
+        _validate_model(model)
+    except (TypeError, KeyError, AttributeError) as exc:
+        raise AssessmentError(f"Risk model structure is invalid: {exc}") from exc
     return model
 
 
@@ -47,12 +50,22 @@ def _validate_model(model: dict[str, Any]) -> None:
     tiers = metadata.get("tier_order")
     if not isinstance(tiers, list) or not tiers or len(tiers) != len(set(tiers)):
         raise AssessmentError("model.tier_order must be a non-empty list of unique tiers")
+    if tiers != ["tier_1", "tier_2", "tier_3"]:
+        raise AssessmentError("model.tier_order must preserve Tier 1, Tier 2, Tier 3 from highest to lowest")
+    if metadata.get("no_downward_adjustment") is not True:
+        raise AssessmentError("model.no_downward_adjustment must be true")
 
     required_inputs = model["required_inputs"]
     if len(required_inputs) != len(set(required_inputs)):
         raise AssessmentError("required_inputs contains duplicates")
 
     assessment_properties = Assessment.model_json_schema()["properties"]
+    if set(required_inputs) != set(Assessment.model_json_schema()["required"]):
+        raise AssessmentError("required_inputs must match the canonical assessment contract")
+    enum_fields = {name for name, prop in assessment_properties.items()
+                   if prop.get("enum") or prop.get("items", {}).get("enum")}
+    if set(model["enums"]) != enum_fields:
+        raise AssessmentError("enums must include every canonical enumerated field")
     for field, allowed in model["enums"].items():
         if field not in assessment_properties:
             raise AssessmentError(f"enums references unknown assessment field {field}")
@@ -81,15 +94,36 @@ def _validate_model(model: dict[str, Any]) -> None:
         if not required_rule_fields.issubset(rule):
             raise AssessmentError(f"elevation rule is missing fields: {sorted(required_rule_fields - set(rule))}")
         rule_ids.append(rule["id"])
+        if not isinstance(rule["id"], str) or not rule["id"].strip():
+            raise AssessmentError("elevation rule IDs must be non-empty text")
+        if not isinstance(rule["when"], dict) or not rule["when"]:
+            raise AssessmentError(f"rule {rule['id']} requires non-empty conditions")
         if rule["minimum_tier"] not in tiers:
             raise AssessmentError(f"rule {rule['id']} references an unknown minimum_tier")
         for field, condition in rule["when"].items():
             if field not in required_inputs:
                 raise AssessmentError(f"rule {rule['id']} references unknown input {field}")
+            allowed = model["enums"].get(field)
+            if allowed is None:
+                raise AssessmentError(f"rule {rule['id']} requires an enumerated input")
+            is_array = assessment_properties[field].get("type") == "array"
             if isinstance(condition, dict):
                 operators = set(condition)
                 if len(operators) != 1 or not operators <= allowed_operators:
                     raise AssessmentError(f"rule {rule['id']} uses an unsupported condition operator")
+                operator, values = next(iter(condition.items()))
+                if operator == "any_of" and not is_array or operator != "any_of" and is_array:
+                    raise AssessmentError(f"rule {rule['id']} operator does not match the field type")
+                if operator == "equals":
+                    values = [values]
+                elif not isinstance(values, list) or not values:
+                    raise AssessmentError(f"rule {rule['id']} requires a non-empty list of values")
+            else:
+                if is_array:
+                    raise AssessmentError(f"rule {rule['id']} requires any_of for array fields")
+                values = [condition]
+            if any(not isinstance(value, str) or value not in allowed for value in values):
+                raise AssessmentError(f"rule {rule['id']} uses values outside the {field} contract")
     if len(rule_ids) != len(set(rule_ids)):
         raise AssessmentError("elevation rule IDs must be unique")
 

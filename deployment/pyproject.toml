@@ -1,0 +1,11 @@
+[project]
+name = "ai-governance-control-plane-deployment"
+version = "0.0.0"
+requires-python = ">=3.10"
+dependencies = ["ai-governance-control-plane[web]"]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+ai-governance-control-plane = { path = ".." }

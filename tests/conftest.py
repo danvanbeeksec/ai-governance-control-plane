@@ -5,9 +5,6 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-FRAMEWORK_SRC = ROOT.parent / "ai-governance-control-framework" / "src"
-if FRAMEWORK_SRC.is_dir():
-    sys.path.insert(0, str(FRAMEWORK_SRC))
 
 
 @pytest.fixture

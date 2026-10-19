@@ -1,5 +1,7 @@
 # AI Governance Control Plane
 
+Candidate 0.7.0 adds guided demonstrations, design comparison, review briefs, and reliable reassessment. It is ready for validation on this branch and does not establish that the hosted app has been updated.
+
 **[Open the public Streamlit demonstration](https://ai-governance-control-plane.streamlit.app/)**
 
 The included Streamlit application, **AI System Risk & Control Assessor**, is an independent,
@@ -8,6 +10,8 @@ risk rules, and producing an executive-readable decision summary. It validates a
 explicitly pinned artifact from a separately maintained AI control framework.
 
 This is a governance product demonstration. It shows how governance intent can become a usable and auditable decision process. It is not a production GRC platform or a substitute for qualified legal, compliance, privacy, security, or risk review.
+
+![Candidate guided start page](docs/screenshots/start.jpg)
 
 ## Phase 2 demonstration
 
@@ -117,7 +121,7 @@ streamlit run app.py
 ```
 
 The interface automatically validates the installed framework package. For local framework
-development, a sibling framework checkout or `AI_CONTROL_FRAMEWORK_PATH` takes precedence. The
+development, an explicit `AI_CONTROL_FRAMEWORK_PATH` takes precedence. A sibling checkout is a fallback only when the installed package is unavailable. The
 digest, schema, version, control count, control IDs, and references must match the source pin
 before an assessment can run. The framework dependency is an operator configuration, not an
 end-user upload.
@@ -127,6 +131,8 @@ systems and assessments only in Streamlit session memory. It does not create per
 data. It displays the inherent-risk tier with qualitative guidance in the sidebar, framework provenance, required
 system controls, controls requiring an applicability decision, enterprise dependencies,
 human-confirmation questions, and a downloadable JSON record.
+
+The start page offers a worked example, blank fictional intake, and design comparison. [Follow the walkthrough](docs/demo-walkthrough.md) even when the hosted application is unavailable.
 
 The interface separates the AI inventory from new assessments through sidebar navigation. Inventory
 records expose a complete detail view and current risk tier. Running an assessment produces a draft
@@ -201,3 +207,9 @@ A reviewer can submit each synthetic case and see validated intake, triggered cl
 **Phase 2 Control Plane foundation implemented.** The interface runs the existing risk and recommendation engines without duplicating their governance logic. It adds the AI System parent model, session-only public demo inventory, local SQLite persistence, immutable assessment history, framework provenance, lifecycle states, synthetic inventory, and duplicate awareness. Public persistent storage, production workflow, authentication, approvals, evidence management, and integrations remain deferred.
 
 Licensed under the MIT License. See [LICENSE](LICENSE).
+
+## Candidate release validation
+
+`pyproject.toml` owns runtime dependencies. `deployment/uv.lock` records a universal resolution, and `requirements.txt` is generated from that lock for Streamlit and pip. Update with `python scripts/lock_dependencies.py` after installing `uv`; CI checks the generated export. The lock is nested deliberately so Streamlit uses the generated root requirements file, including the web extra.
+
+Inventory updates select a stable system ID and preview changes. A new record with the same name never silently merges into an existing record. Saving a system and its history is atomic. Edited inputs invalidate the draft until reassessed. Blank intake requires explicit material facts. Comparison reports applicable-to-undetermined transitions without calling them non-applicability decisions.
