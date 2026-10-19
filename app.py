@@ -518,7 +518,8 @@ def render_new_assessment(service, inventory, data_mode):
     choices = ['Start blank'] + [item['system_name'] for item in examples]
     if 'start_choice' in st.session_state:
         st.session_state['synthetic_example'] = st.session_state.pop('start_choice')
-    selected_name = st.selectbox('Synthetic example', choices, index=1, key='synthetic_example',
+    st.session_state.setdefault('synthetic_example', choices[1] if len(choices) > 1 else choices[0])
+    selected_name = st.selectbox('Synthetic example', choices, index=None, key='synthetic_example',
                                 help='Choose blank intake or load a worked fictional example.')
     example = next((item for item in examples if item['system_name'] == selected_name), {})
     targets = {item.system_id: item for item in inventory.list_systems()}
