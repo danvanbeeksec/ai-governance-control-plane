@@ -84,7 +84,7 @@ pydantic-core==2.50.1
     # via pydantic
 pydeck==0.9.3
     # via streamlit
-python-dateutil==2.9.0.post0
+python-dateutil==3.0.0
     # via pandas
 python-multipart==0.0.32
     # via streamlit
