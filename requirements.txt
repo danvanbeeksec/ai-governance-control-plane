@@ -78,7 +78,7 @@ pyarrow==25.0.1 ; python_full_version < '3.11'
     # via streamlit
 pyarrow==26.0.0 ; python_full_version >= '3.11'
     # via streamlit
-pydantic==2.14.1
+pydantic==2.14.2
     # via ai-governance-control-plane
 pydantic-core==2.50.1
     # via pydantic
